@@ -481,7 +481,7 @@
       <span class="badge badge-standard">备选</span>
       <div>
         <div class="card-title">方式二：C端游戏道具奖励采买（皮肤/道具）</div>
-        <div class="card-desc">品牌侧自行创建赛事并垫付购买，游戏内自动发放</div>
+        <div class="card-desc">管理员创建赛事配道具 → 品牌侧核对并垫付付款 → 游戏内自动发放</div>
       </div>
     </div>
     <div class="toggle-icon">▼</div>
@@ -489,68 +489,104 @@
   <div class="card-body">
     <div class="card-body-inner">
 
-      <div class="notice notice-warning">
-        <strong>注意：</strong>此方式需品牌侧<strong>个人先行垫付</strong>费用，后续走报销流程。请提前确认垫付金额及财务对开票的要求（<strong>仅支持对私开票，周期约2个月</strong>）。
+      <div class="notice notice-info" style="margin-bottom:20px;">
+        C端道具采买为<strong>两方协作</strong>模式：<strong style="color:var(--accent2);">游戏人生管理员</strong>负责前置配置（不涉及费用），<strong style="color:var(--warning);">品牌侧</strong>负责确认信息并<strong>个人垫付付款</strong>。
       </div>
 
-      <h3 style="font-size:15px;font-weight:700;color:var(--primary);margin-bottom:14px;">一、创建赛事并付款</h3>
+      <div class="notice notice-warning">
+        <strong>注意：</strong>品牌侧需<strong>个人先行垫付</strong>费用，后续走报销流程。开票<strong>仅支持对私，周期约2个月</strong>，请提前与财务确认。
+      </div>
 
-      <div class="steps">
-        <div class="step-item">
-          <div class="step-num type-b"></div>
-          <div class="step-content">
-            <div class="step-title">进入游戏人生H5，点击「去看看」</div>
-            <div class="step-desc">进入赛事平台，开始配置比赛信息</div>
-          </div>
+      <h3 style="font-size:15px;font-weight:700;color:var(--primary);margin-bottom:14px;">一、整体流程</h3>
+
+      <!-- 阶段A：管理员侧（前置配置，不涉及付款） -->
+      <div style="background:#f0f4ff;border-radius:8px;padding:16px 18px;margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          🔧 阶段 A：游戏人生管理员（前置配置，不涉及付款）
         </div>
-
-        <div class="step-item">
-          <div class="step-num type-b"></div>
-          <div class="step-content">
-            <div class="step-title">创建比赛，添加游戏道具（皮肤/奖励）</div>
-            <div class="step-desc">在赛事系统中选择所需的游戏道具奖品、设置赛制规则和比赛时间</div>
-            <div class="sub-steps">
-              <div class="sub-step">仔细核对：道具名称 / 数量 / 单价 / 总金额</div>
-              <div class="sub-step">确认无误后再进入下一步，付款后无法修改</div>
+        <div class="steps" style="counter-reset: step-a;">
+          <div class="step-item" style="margin-bottom:10px;">
+            <div class="step-num type-b" style="width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">登录游戏人生后台，创建赛事并添加游戏道具（皮肤/奖励）</div>
+              <div class="step-desc" style="font-size:12px;">在赛事系统中配置好奖品清单、赛制规则、比赛时间等全部信息</div>
+            </div>
+          </div>
+          <div class="step-item" style="margin-bottom:0;">
+            <div class="step-num type-b" style="width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">生成分享链接，发送给品牌侧对接人</div>
+              <div class="step-desc" style="font-size:12px;">品牌侧将凭此链接进入并完成后续付款操作</div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="step-item">
-          <div class="step-num type-b"></div>
-          <div class="step-content">
-            <div class="step-title">核对信息后，点击「创建比赛」并微信支付</div>
-            <div class="step-desc">系统显示游戏奖品总金额，用微信完成支付即可，赛事创建成功</div>
+      <!-- 阶段B：品牌侧（垫付付款） -->
+      <div style="background:#fff7ed;border-radius:8px;padding:16px 18px;margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:700;color:var(--warning);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          💳 阶段 B：品牌侧（核对 & 垫付付款）
+        </div>
+
+        <div class="notice" style="background:#fef3c7;border-left:4px solid var(--warning);color:#92400e;padding:12px 16px;font-size:12px;line-height:1.7;margin-bottom:14px;border-radius:6px;">
+          入口链接由管理员创建后单独提供，此处无预设链接，请以管理员发送的分享链接为准
+        </div>
+
+        <div class="steps" style="counter-reset: step-b;">
+          <div class="step-item" style="margin-bottom:10px;">
+            <div class="step-num" style="background:linear-gradient(135deg,var(--warning),#f59e0b);width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">收到管理员的<strong style="color:var(--accent);">分享链接</strong>后点击进入</div>
+              <div class="step-desc" style="font-size:12px;">进入赛事预览页，点击<strong style="color:var(--accent);">「去看看」</strong>查看已配置好的赛事信息</div>
+            </div>
+          </div>
+          <div class="step-item" style="margin-bottom:10px;">
+            <div class="step-num" style="background:linear-gradient(135deg,var(--warning),#f59e0b);width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;"><strong style="color:var(--accent);">核对游戏道具信息及金额</strong>，确认无误</div>
+              <div class="step-desc" style="font-size:12px;">重点检查：道具名称 / 数量 / 总金额 是否与约定一致</div>
+              <div class="sub-steps" style="margin-top:6px;padding-left:14px;">
+                <div class="sub-step" style="padding:4px 0 4px 16px;font-size:12px;">如有问题立即联系管理员修改，<strong>切勿直接付款</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="step-item" style="margin-bottom:0;">
+            <div class="step-num" style="background:linear-gradient(135deg,var(--warning),#f59e0b);width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">点击<strong style="color:var(--accent);">「创建比赛」</strong>并完成微信支付（<strong style="color:var(--accent);">品牌侧个人垫付</strong>）</div>
+              <div class="step-desc" style="font-size:12px;">支付完成后赛事即创建成功，道具将在比赛中自动发放给获奖玩家</div>
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- 流程图 -->
       <div class="flow-section">
-        <div class="flow-title">📋 道具采买完整流程一览</div>
+        <div class="flow-title">📋 完整协作流程一览</div>
         <div class="flow-steps">
           <div class="flow-step">
-            <div class="flow-step-circle">📱</div>
-            <div class="flow-step-text">进H5<br/>点「去看看」</div>
+            <div class="flow-step-circle" style="border-color:#0f3460;color:#0f3460;font-weight:700;font-size:16px;">管</div>
+            <div class="flow-step-text">管理员创建<br/>赛事+添加道具</div>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-step">
-            <div class="flow-step-circle">🎮</div>
-            <div class="flow-step-text">创建比赛<br/>+ 添加道具奖励</div>
+            <div class="flow-step-circle" style="border-color:#0f3460;color:#0f3460;font-weight:700;font-size:16px;">管</div>
+            <div class="flow-step-text">发链接<br/>给品牌侧</div>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-step">
-            <div class="flow-step-circle">✅</div>
+            <div class="flow-step-circle" style="border-color:var(--warning);color:var(--warning);font-weight:700;font-size:16px;">品</div>
+            <div class="flow-step-text">品牌侧点<br/>「去看看」</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-circle" style="border-color:var(--warning);color:var(--warning);font-weight:700;font-size:16px;">品</div>
             <div class="flow-step-text">核对道具<br/>+金额无误</div>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-step">
-            <div class="flow-step-circle">💰</div>
-            <div class="flow-step-text">点「创建比赛」<br/>微信垫付付款</div>
-          </div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">
-            <div class="flow-step-circle">🧾</div>
-            <div class="flow-step-text">赛后<br/>自助开票报销</div>
+            <div class="flow-step-circle" style="border-color:var(--warning);color:var(--warning);font-weight:700;font-size:16px;">品</div>
+            <div class="flow-step-text">点「创建比赛」<br/>品牌侧垫付付款</div>
           </div>
         </div>
       </div>
@@ -558,13 +594,13 @@
       <!-- 指引图片 -->
       <div style="margin-top:20px;">
         <img src="images/代创建付费流程.png" alt="代创建赛事付款流程指引" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;" />
-        <p style="text-align:center;font-size:12px;color:#999;margin-top:6px;">图：创建赛事并付款流程操作示意</p>
+        <p style="text-align:center;font-size:12px;color:#999;margin-top:6px;">图：代创建赛事付款流程操作示意（阶段 B 品牌侧操作部分）</p>
       </div>
 
       <h3 style="font-size:15px;font-weight:700;color:var(--primary);margin:28px 0 14px;">二、（可选）添加管理员 / 转让赛事权限</h3>
 
       <div class="notice notice-info">
-        如果需要运营团队协助管理赛事上架和日常运营，可将赛事管理员权限转让给对应同事
+        品牌侧付款完成后，如需运营团队协助管理赛事上架和日常运营，由管理员将权限转让给对应同事
       </div>
 
       <div class="steps">
@@ -681,7 +717,7 @@
           <tr>
             <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;background:#fafafa;">额外操作</td>
             <td style="padding:10px 14px;border-bottom:1px solid var(--border);">垫付采购 + 入库 + 赛后逐个寄送 + 报销</td>
-            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">创建赛事 + 添加管理员 + 开票报销</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">管理员创建配道具 → 品牌侧核对+垫付付款 → （可选）转让权限 → 开票报销</td>
           </tr>
           <tr>
             <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;background:#fafafa;">开票方式</td>
