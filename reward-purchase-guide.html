@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奖励采买操作指南</title>
+<style>
+  :root {
+    --primary: #1a1a2e;
+    --accent: #e94560;
+    --accent2: #0f3460;
+    --bg: #f5f5f7;
+    --card-bg: #ffffff;
+    --text: #333333;
+    --text-light: #666666;
+    --border: #e0e0e0;
+    --success: #16a34a;
+    --warning: #d97706;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: 36px;
+  }
+
+  /* 方案卡片 */
+  .method-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .method-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .card-header:hover { background:fafafa; }
+
+  .card-header.left-open { border-bottom-color: var(--border); }
+
+  .card-left { display: flex; align-items: center; gap: 14px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .badge-recommended {
+    background: linear-gradient(135deg, #e94560, #ff6b81);
+    color: #fff;
+  }
+
+  .badge-standard {
+    background: linear-gradient(135deg, #0f3460, #16213e);
+    color: #fff;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 2px;
+  }
+
+  .toggle-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg);
+    transition: transform 0.3s ease;
+    font-size: 14px;
+    color: var(--text-light);
+    flex-shrink: 0;
+  }
+
+  .toggle-icon.open { transform: rotate(180deg); }
+
+  .card-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+
+  .card-body-inner { padding: 20px 24px 28px; }
+
+  /* 链接按钮 */
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--accent), #ff6b81);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.15s;
+    margin-bottom: 20px;
+  }
+
+  .link-btn:hover { opacity: 0.9; transform: scale(1.02); }
+  .link-btn:active { transform: scale(0.98); }
+  .link-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+  .link-btn.secondary {
+    background: linear-gradient(135deg, var(--accent2), #1a5276);
+  }
+
+  /* 提示框 */
+  .notice {
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  .notice-warning {
+    background: #fef3c7;
+    border-left: 4px solid var(--warning);
+    color: #92400e;
+  }
+
+  .notice-info {
+    background: #dbeafe;
+    border-left: 4px solid #2563eb;
+    color: #1e40af;
+  }
+
+  .notice-success {
+    background: #dcfce7;
+    border-left: 4px solid var(--success);
+    color: #166534;
+  }
+
+  .notice strong { font-weight: 700; }
+
+  /* 步骤 */
+  .steps { counter-reset: step; }
+
+  .step-item {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .step-item:last-child { margin-bottom: 0; }
+
+  .step-num {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    counter-increment: step;
+  }
+
+  .step-num::before { content: counter(step); }
+
+  .step-num.type-a { background: linear-gradient(135deg, var(--accent), #ff6b81); }
+  .step-num.type-b { background: linear-gradient(135deg, var(--accent2), #1a5276); }
+
+  .step-content { flex: 1; padding-top: 3px; }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--text-light);
+  }
+
+  /* 子步骤 */
+  .sub-steps {
+    margin-top: 10px;
+    padding-left: 16px;
+    border-left: 2px solid var(--border);
+  }
+
+  .sub-step {
+    position: relative;
+    padding: 6px 0 6px 18px;
+    font-size: 13px;
+    color: var(--text-light);
+  }
+
+  .sub-step::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 10px;
+    height: 2px;
+    background: var(--border);
+  }
+
+  .sub-step a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px dashed var(--accent);
+  }
+
+  .sub-step a:hover { border-bottom-style: solid; }
+
+  /* 流程图区域 */
+  .flow-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .flow-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .flow-step {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 140px;
+  }
+
+  .flow-step-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    margin-bottom: 8px;
+    transition: all 0.2s;
+  }
+
+  .flow-step:hover .flow-step-circle {
+    border-color: var(--accent);
+    background: #fff0f3;
+    transform: scale(1.08);
+  }
+
+  .flow-step-text {
+    font-size: 12px;
+    color: var(--text-light);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .flow-arrow {
+    flex-shrink: 0;
+    font-size: 20px;
+    color: var(--border);
+    padding: 0 4px;
+    margin-bottom: 24px;
+  }
+
+  /* 底部信息 */
+  .footer-info {
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* 响应式 */
+  @media (max-width: 600px) {
+    body { padding: 16px; }
+    h1 { font-size: 22px; }
+    .card-header { padding: 16px 18px; }
+    .card-body-inner { padding: 16px 18px 24px; }
+    .flow-step { min-width: 110px; }
+    .flow-step-circle { width: 40px; height: 40px; font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>奖励采买操作指南</h1>
+<p class="subtitle">品牌赛事联动 · 奖励采购与配置流程</p>
+
+<!-- 方式一：王者周边采买（推荐） -->
+<div class="method-card">
+  <div class="card-header" onclick="toggleCard(this)">
+    <div class="card-left">
+      <span class="badge badge-recommended">推荐</span>
+      <div>
+        <div class="card-title">方式一：王者周边采买（聚诚品）</div>
+        <div class="card-desc">官方周边商城直购，无需垫付，流程简洁</div>
+      </div>
+    </div>
+    <div class="toggle-icon">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="card-body-inner">
+
+      <!-- 购买链接 -->
+      <a href="https://mall.qq.com/pvpmall/productlist.shtml?catid=304" target="_blank" rel="noopener noreferrer" class="link-btn">
+        <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+        进入聚诚品王者周边商城
+        <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+      </a>
+
+      <div class="notice notice-success">
+        <strong>优势：</strong>官方正品渠道、支持对公结算/报销、品类齐全（手办/徽章/服饰/文具等）、发货稳定可追踪
+      </div>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num type-a"></div>
+          <div class="step-content">
+            <div class="step-title">确认采购清单</div>
+            <div class="step-desc">根据赛程奖励结构，统计所需周边品类、数量及预算上限</div>
+            <div class="sub-steps">
+              <div class="sub-step">参考：<a href="https://mall.qq.com/pvpmall/productlist.shtml?catid=304" target="_blank">聚诚品商城浏览选品</a></div>
+              <div class="sub-step">建议优先选择库存充足的热门款，避免断货影响发放时效</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-a"></div>
+          <div class="step-content">
+            <div class="step-title">提交采购申请</div>
+            <div class="step-desc">按公司采购流程提交申请，附商品链接+数量清单+总价</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-a"></div>
+          <div class="step-content">
+            <div class="step-title">下单付款 & 确认收货</div>
+            <div class="step-desc">审批通过后在商城下单，跟踪物流确保赛前到货</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-a"></div>
+          <div class="step-content">
+            <div class="step-title">登记入库 & 发放</div>
+            <div class="step-desc">奖品到货后清点登记，赛后按获奖名单安排发放</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 方式二：C端游戏道具奖励采买 -->
+<div class="method-card">
+  <div class="card-header" onclick="toggleCard(this)">
+    <div class="card-left">
+      <span class="badge badge-standard">备选</span>
+      <div>
+        <div class="card-title">方式二：C端游戏道具奖励采买（皮肤/道具）</div>
+        <div class="card-desc">管理员配道具 → 品牌侧确认付款 → 转让管理权限</div>
+      </div>
+    </div>
+    <div class="toggle-icon">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="card-body-inner">
+
+      <div class="notice notice-warning">
+        <strong>注意：</strong>此方式需要负责人<strong>个人先行垫付</strong>费用，后续走报销流程。请提前确认垫付金额在可接受范围内。
+      </div>
+
+      <h3 style="font-size:15px;font-weight:700;color:var(--primary);margin-bottom:14px;">一、整体协作流程（两方配合）</h3>
+
+      <div class="notice notice-info" style="margin-bottom:20px;">
+        C端道具采买为<strong>两方协作</strong>模式：游戏人生管理员负责前置配置，品牌侧负责确认信息并付款。
+      </div>
+
+      <!-- 阶段A：管理员侧 -->
+      <div style="background:#f0f4ff;border-radius:8px;padding:16px 18px;margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          🔧 阶段 A：游戏人生管理员（前置操作）
+        </div>
+        <div class="steps" style="counter-reset: step-a;">
+          <div class="step-item" style="margin-bottom:12px;">
+            <div class="step-num type-b" style="width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">登录游戏人生后台，创建赛事并添加游戏道具（皮肤/奖励）</div>
+              <div class="step-desc" style="font-size:12px;">在赛事系统中配置好奖品清单、赛制规则、比赛时间等全部信息</div>
+            </div>
+          </div>
+          <div class="step-item" style="margin-bottom:0;">
+            <div class="step-num type-b" style="width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">生成分享链接，发送给品牌侧对接人</div>
+              <div class="step-desc" style="font-size:12px;">品牌侧将凭此链接进入并完成后续付款操作</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 阶段B：品牌侧 -->
+      <div style="background:#fff7ed;border-radius:8px;padding:16px 18px;margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:700;color:var(--warning);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          💳 阶段 B：品牌侧（确认 & 付款）
+        </div>
+
+        <!-- 品牌侧入口链接 -->
+        <a href="https://h5.nes.smoba.qq.com/pvpesport.web.pro/#/?adtag=wxsharechat&sharect=1696752522205" target="_blank" rel="noopener noreferrer" class="link-btn secondary" style="padding:8px 16px;font-size:13px;margin-bottom:14px;">
+          <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+          点击进入赛事H5页面（品牌侧入口）
+        </a>
+
+        <div class="steps" style="counter-reset: step-b;">
+          <div class="step-item" style="margin-bottom:12px;">
+            <div class="step-num" style="background:linear-gradient(135deg,var(--warning),#f59e0b);width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">点击下方链接进入后，点击<strong style="color:var(--accent);">「去看看」</strong></div>
+              <div class="step-desc" style="font-size:12px;">进入赛事预览页，查看已配置好的赛事信息</div>
+            </div>
+          </div>
+          <div class="step-item" style="margin-bottom:12px;">
+            <div class="step-num" style="background:linear-gradient(135deg,var(--warning),#f59e0b);width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;"><strong style="color:var(--accent);">核对游戏道具信息及金额</strong>，确认无误</div>
+              <div class="step-desc" style="font-size:12px;">重点检查：道具名称/数量/总金额 是否与约定一致</div>
+              <div class="sub-steps" style="margin-top:6px;padding-left:14px;">
+                <div class="sub-step" style="padding:4px 0 4px 16px;font-size:12px;">如有问题立即联系管理员修改，<strong>切勿直接付款</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="step-item" style="margin-bottom:0;">
+            <div class="step-num" style="background:linear-gradient(135deg,var(--warning),#f59e0b);width:28px;height:28px;font-size:12px;"></div>
+            <div class="step-content" style="padding-top:1px;">
+              <div class="step-title" style="font-size:14px;">点击<strong style="color:var(--accent);">「创建比赛」</strong>并完成微信支付</div>
+              <div class="step-desc" style="font-size:12px;">支付完成后赛事即创建成功，后续由管理员转让权限进行运营管理</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-section">
+        <div class="flow-title">📋 完整协作流程一览</div>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-circle">🔧</div>
+            <div class="flow-step-text">管理员<br/>创建赛事+配道具</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-circle">🔗</div>
+            <div class="flow-step-text">发链接<br/>给品牌侧</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-circle">👀</div>
+            <div class="flow-step-text">品牌侧点<br/>「去看看」</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-circle">✅</div>
+            <div class="flow-step-text">核对道具<br/>+金额无误</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-circle">💰</div>
+            <div class="flow-step-text">点「创建比赛」<br/>微信付款</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px;font-weight:700;color:var(--primary);margin:28px 0 14px;">二、添加管理员（转让赛事权限）</h3>
+
+      <div class="notice notice-info">
+        创建完成后需将赛事管理权限转让给运营团队，方便后期上架和日常管理
+      </div>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num type-b"></div>
+          <div class="step-content">
+            <div class="step-title">进入已创建比赛，点击「设置」</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-b"></div>
+          <div class="step-content">
+            <div class="step-title">在设置页找到「赛事管理员」，点击进入</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-b"></div>
+          <div class="step-content">
+            <div class="step-title">点击「添加」管理员</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-b"></div>
+          <div class="step-content">
+            <div class="step-title">点击右上角「...」→ 「分享链接」发送给对方</div>
+            <div class="step-desc">对方收到链接申请后，你这边点击「通过」即完成授权</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px;font-weight:700;color:var(--primary);margin:28px 0 14px;">三、自助开票（报销凭证）</h3>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num type-b"></div>
+          <div class="step-content">
+            <div class="step-title">微信搜索「腾讯充值」服务号并关注</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-b"></div>
+          <div class="step-content">
+            <div class="step-title">进入服务号 → 「我的账户」→ 「申请发票」</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num type-b"></div>
+          <div class="step-content">
+            <div class="step-title">按需选择申请入口，填写开票信息</div>
+            <div class="sub-steps">
+              <div class="sub-step">支持：增值税电子普通发票 / 增值税电子专用发票 / 增值税纸质专用发票</div>
+              <div class="sub-step">开票前请确认抬头、税号等信息准确无误</div>
+              <div class="sub-step">如需开具数电票，可在「如何申请发票」弹窗中点击对应入口</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 对比表格 -->
+<div class="method-card">
+  <div class="card-header" onclick="toggleCard(this)">
+    <div class="card-left">
+      <span class="badge badge-standard" style="background:linear-gradient(135deg,#6b7280,#374151);">对比</span>
+      <div>
+        <div class="card-title">两种方式对比速查</div>
+      </div>
+    </div>
+    <div class="toggle-icon">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="card-body-inner">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#f8f8fa;">
+            <th style="padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);color:var(--primary);font-weight:700;">对比项</th>
+            <th style="padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);color:var(--accent);font-weight:700;">周边采买（推荐）</th>
+            <th style="padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);color:var(--accent2);font-weight:700;">游戏道具采买</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;background:#fafafa;">是否需要垫付</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);color:var(--success);font-weight:600;">否</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);color:var(--accent);font-weight:600;">是（个人垫付）</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;background:#fafafa;">采购渠道</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);"><a href="https://mall.qq.com/pvpmall/productlist.shtml?catid=304" target="_blank">聚诚品官方商城</a></td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">赛事H5平台内购</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;background:#fafafa;">奖励类型</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">实物周边（手办/徽章/服饰等）</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">游戏内虚拟道具（皮肤等）</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;background:#fafafa;">发放形式</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">物流邮寄</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">游戏内自动发放</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;background:#fafafa;">额外操作</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">采购申请 + 入库登记</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">创建赛事 + 添加管理员 + 开票</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;font-weight:600;background:#fafafa;">适用场景</td>
+            <td style="padding:10px 14px;color:var(--success);font-weight:600;">品牌方对接、线下颁奖、实物激励</td>
+            <td style="padding:10px 14px;color:var(--text-light);">纯线上赛事、快速发放、玩家偏好</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footer-info">
+  奖励采买操作指南 · 仅供内部使用 · 最后更新 2026-05-20
+</div>
+
+<script>
+function toggleCard(header) {
+  const card = header.parentElement;
+  const body = card.querySelector('.card-body');
+  const icon = header.querySelector('.toggle-icon');
+  const isOpen = icon.classList.contains('open');
+
+  if (isOpen) {
+    body.style.maxHeight = '0';
+    icon.classList.remove('open');
+    header.classList.remove('left-open');
+  } else {
+    body.style.maxHeight = body.scrollHeight + 80 + 'px';
+    icon.classList.add('open');
+    header.classList.add('left-open');
+  }
+}
+
+// 默认展开第一个推荐方案
+document.addEventListener('DOMContentLoaded', function() {
+  const firstHeader = document.querySelector('.method-card .card-header');
+  if (firstHeader) toggleCard(firstHeader);
+
+  // 展开对比表
+  const allHeaders = document.querySelectorAll('.method-card .card-header');
+  if (allHeaders.length >= 3) toggleCard(allHeaders[2]);
+});
+</script>
+
+</body>
+</html>
