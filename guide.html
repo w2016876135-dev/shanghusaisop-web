@@ -1532,6 +1532,17 @@ ${suggestions.map(s => '   • '+s).join('\n')}
     </div>
 </div>
 
+<!-- 企微群推送区（群机器人 Webhook，零中转） -->
+<div style="margin-top:14px;padding:12px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
+  <div style="font-size:12px;font-weight:700;color:#0369A1;margin-bottom:6px;">📲 一键推送到企业微信群（机器人 Webhook）</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <input id="wecomWebhook" placeholder="粘贴群机器人 Webhook 地址" value="${localStorage.getItem('wecomWebhook')||''}" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
+    <button onclick="saveWecomWebhook()" class="rb-btn" style="background:#64748B;color:#fff;border:none;min-width:64px;">💾 记住</button>
+    <button id="wecomPushBtn" onclick="pushToWeComBot()" class="rb-btn" style="background:linear-gradient(135deg,#07C160,#059B4A);color:#fff;border:none;box-shadow:0 2px 8px rgba(7,193,96,.25);min-width:84px;">📤 推送</button>
+  </div>
+  <div style="font-size:10px;color:#64748B;margin-top:6px;">Webhook 含密钥，仅建议用于专用群；地址仅保存在本机浏览器。</div>
+</div>
+
 <!-- 操作按钮区 -->
 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
     <button onclick="copyFullData()" class="rb-btn rb-btn-copy" style="flex:1;min-width:130px;justify-content:center;">
@@ -1562,6 +1573,68 @@ ${suggestions.map(s => '   • '+s).join('\n')}
         footer.innerHTML = '<button class="rb-btn rb-btn-dl" onclick="closeResult()">✕ 关闭</button>';
     }
     document.getElementById('resultPanel').classList.add('show');
+}
+
+// ====== 企微群机器人推送（Webhook，零中转）======
+function saveWecomWebhook(){
+  const el = document.getElementById('wecomWebhook');
+  const v = el && el.value.trim();
+  if(!v){ showActionResult('⚠️ 请先粘贴 Webhook 地址', '#DC2626'); return; }
+  localStorage.setItem('wecomWebhook', v);
+  showActionResult('💾 已记住本机 Webhook 地址', '#0369A1');
+}
+
+function _byteLen(s){ return new Blob([s]).size; }
+function _truncBytes(s, max){
+  let n = 0;
+  for(let i=0;i<s.length;i++){ n += _byteLen(s[i]); if(n>max) return s.slice(0,i); }
+  return s;
+}
+
+async function pushToWeComBot(){
+  const input = document.getElementById('wecomWebhook');
+  const url = (input && input.value.trim()) || localStorage.getItem('wecomWebhook') || '';
+  if(!url){ showActionResult('⚠️ 请先粘贴并「记住」群机器人 Webhook 地址', '#DC2626'); return; }
+  const d = window._submitData || {};
+  const grData = (typeof grCollectAll==='function') ? grCollectAll() : [];
+  const L = [];
+  L.push('# 📋 商户赛品牌需求提交');
+  L.push('> 提交时间：' + new Date().toLocaleString('zh-CN'));
+  L.push('> 来源：SOP v5.0 Web 自动提交');
+  L.push('');
+  L.push('**📅 赛事周期**：' + (d.startDate||'未选择') + ' → ' + (d.endDate||'未选择') + (d.durationText?('（'+d.durationText+'）'):''));
+  L.push('**💰 奖励类型**：' + (d.rewardTypes&&d.rewardTypes.length? d.rewardTypes.join('、'):'未选择'));
+  L.push('**🎲 抽奖任务**：' + (d.taskStr||'不需要') + (d.taskOpts&&d.taskOpts.length?('（'+d.taskOpts.join('、')+'）'):''));
+  L.push('**📍 主推城市**：' + (d.cities&&d.cities.length? d.cities.join('、')+'（共'+d.cities.length+'个）':'全国投放'));
+  if(d.hasMiniProg) L.push('**📱 小程序**：AppID=' + (d.miniAppId||'') + ' Path=' + (d.miniPath||''));
+  L.push('');
+  if(grData.length){
+    grData.forEach(g=>{
+      L.push('**🎮 ' + g.gameName + '**' + (g.brand?(' 品牌：'+g.brand):'') + (g.period?(' 周期：'+g.period):''));
+      g.blocks.forEach(b=>{
+        L.push('> · ' + b.title + '（共' + b.rows.length + '行）');
+        b.rows.slice(0,8).forEach(r=>{ L.push('>   - ' + r.cells.join(' | ')); });
+        if(b.rows.length>8) L.push('>   - …（其余'+(b.rows.length-8)+'行见完整版）');
+      });
+      L.push('');
+    });
+  } else { L.push('> 未填写奖励设置'); L.push(''); }
+  L.push('> 完整结构化数据请使用面板「复制全文」');
+  let md = L.join('\n');
+  const MAX = 4000;
+  if(_byteLen(md) > MAX) md = _truncBytes(md, MAX) + '\n> …（内容过长已截断，完整版见「复制全文」）';
+  const btn = document.getElementById('wecomPushBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '📤 推送中…'; }
+  try{
+    const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({msgtype:'markdown', markdown:{content: md}}) });
+    const j = await resp.json();
+    if(j.errcode === 0) showActionResult('✅ 已推送到企业微信群', '#07C160');
+    else showActionResult('⚠️ 推送失败：' + (j.errmsg||'未知错误') + '（errcode='+j.errcode+'）', '#DC2626');
+  }catch(e){
+    showActionResult('⚠️ 推送出错：' + e.message + '（多为 Webhook 地址错误或被跨域拦截）', '#DC2626');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '📤 推送'; }
+  }
 }
 
 // ====== 四大操作功能 ======
