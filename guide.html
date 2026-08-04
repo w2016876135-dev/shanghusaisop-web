@@ -523,6 +523,9 @@ input,select,textarea{font-size:16px!important;}
 .gr-table td textarea.gr-area:focus{ outline:2px solid #1A4B8C; outline-offset:-2px; border-color:#1A4B8C; }
 .gr-table th.col-rdesc{ min-width:200px; background:#EAF1FF; color:#1A4B8C; }
 .gr-table td.col-rdesc{ background:#F5F9FF; vertical-align:top; }
+/* 奖励说明实时字数计数 */
+.gr-rdesc-count{ font-size:10px; color:#9CA3AF; text-align:right; padding:1px 6px 5px; line-height:1.4; user-select:none; }
+.gr-rdesc-count.over{ color:#DC2626; font-weight:700; }
 /* 窄列：单场份数 / 单价 / 总库存 —— 固定窄宽，把空间让给文字多的列 */
 .gr-table th.col-narrow{ width:74px; min-width:74px; white-space:normal; text-align:center; }
 .gr-table td.col-narrow{ width:74px; min-width:74px; padding:0; }
@@ -535,6 +538,23 @@ input,select,textarea{font-size:16px!important;}
 /* 奖励表：宽表横向滚动（兼顾移动端，避免挤压破版） */
 .gr-table--wide{ min-width:780px; }
 .gr-table-scroll{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+/* 表格外层：提示 + 滚动容器 */
+.gr-table-box{ margin-bottom:10px; }
+.gr-scroll-hint{
+  display:none; /* 默认隐藏，由 JS 在「实际溢出」时显示 */
+  align-items:center; justify-content:center; gap:6px;
+  font-size:11px; color:#1A4B8C; background:linear-gradient(180deg,#EAF1FF,#E2ECFF);
+  border:1px solid #D6E4FF; border-radius:8px; padding:5px 10px; margin-bottom:6px;
+  user-select:none;
+}
+.gr-scroll-hint .ico{ font-size:12px; line-height:1; }
+.gr-scroll-hint .ico.swipe{ display:inline-block; animation:grSwipe 1.5s ease-in-out infinite; }
+.gr-scroll-hint.faded{ opacity:.32; transition:opacity .4s ease; }
+@keyframes grSwipe{ 0%,100%{ transform:translateX(-3px);} 50%{ transform:translateX(3px);} }
+/* 桌面宽屏（内容不溢出）强制隐藏指引，避免误导 */
+@media screen and (min-width:821px){
+  .gr-scroll-hint{ display:none !important; }
+}
 /* 全局品牌名称收集（一次填写，全游戏共用） */
 .gr-global-brand{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:16px 0 6px; padding:14px 18px; background:linear-gradient(135deg,#F4F8FF 0%,#EEF4FF 100%); border:1.5px solid #DCE8FF; border-radius:14px; box-shadow:0 2px 10px rgba(26,75,140,.06); position:relative; overflow:hidden; }
 .gr-global-brand::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg,#1A4B8C,#3B82F6); }
@@ -930,6 +950,7 @@ function collectFormData(){
     // 合作游戏 & 奖励设置
     let selGames = [];
     document.querySelectorAll('.game-card.selected').forEach(c => selGames.push(GAME_CFG[c.dataset.game].name));
+    const grData = grCollectAll();
 
     // 构建HTML内容
     const html = `
@@ -967,7 +988,7 @@ function collectFormData(){
 <div class="rb-section">
     <div class="rb-section">
     <div class="rb-s-title">🎮 合作游戏 & 奖励设置</div>
-    <div class="rb-s-content">${selGames.length > 0 ? selGames.map(n => '<span class="rb-tag rb-tag-blue">'+n+'</span>').join(' ') : '<span style="color:#9CA3AF;">未选择</span>'}</div>
+    <div class="rb-s-content">${selGames.length > 0 ? selGames.map(n => '<span class="rb-tag rb-tag-blue">'+n+'</span>').join(' ') : '<span style="color:#9CA3AF;">未选择</span>'}${grToHTML(grData)}</div>
 </div>
 <div class="rb-s-title">💡 品牌合作建议</div>
     <div class="rb-s-content" id="suggestBox"></div>
@@ -1013,6 +1034,7 @@ ${cities.length ? cities.map(c => '   • '+c).join('\n') : '   （未选择，�
 
 🎮 合作游戏 & 奖励设置
 ${selGames.length ? selGames.map(n => '   • '+n).join('\n') : '   （未选择）'}
+${grToPlainText(grData)}
 
 💡 合作建议
 ${suggestions.map(s => '   '+s.replace(/<[^>]+>/g,'')).join('\n')}
@@ -1106,13 +1128,132 @@ function grRowHTML(cols, seed){
       return '<td class="'+narrow.trim()+'"><select class="gr-sel '+(c.f||'')+'">'+opts+'</select></td>';
     }
     if(c.area){
-      return '<td class="'+(c.f==='rdesc'?'col-rdesc':'')+'"><textarea class="gr-area '+(c.f||'')+'" maxlength="'+(c.max||200)+'" rows="3" placeholder="'+(c.ph||'')+'">'+v+'</textarea></td>';
+      const max = c.max||200;
+      const cnt = v ? v.length : 0;
+      const counter = (c.f==='rdesc')
+        ? '<div class="gr-rdesc-count" data-max="'+max+'">'+cnt+'/'+max+'</div>'
+        : '';
+      return '<td class="'+(c.f==='rdesc'?'col-rdesc':'')+'"><textarea class="gr-area '+(c.f||'')+'" maxlength="'+max+'" rows="3" placeholder="'+(c.ph||'')+'" oninput="grRdescCount(this)">'+v+'</textarea>'+counter+'</td>';
     }
     return '<td class="'+narrow.trim()+'"><input class="'+(c.f||'')+'" placeholder="'+(c.ph||'')+'" value="'+v+'"></td>';
   }).join('');
   return '<tr>'+tds+'<td style="text-align:center"><button class="gr-del" onclick="this.closest(\'tr\').remove();grRecalcScope(this)">删除</button></td></tr>';
 }
 
+/* 滑动指引 HTML（每张奖励表共用） */
+function grScrollHintHTML(){
+  return '<div class="gr-scroll-hint"><span class="ico">👆</span>表格可左右滑动查看完整内容<span class="ico swipe">⟷</span></div>';
+}
+/* 初始化表格横向滚动：仅当内容真正溢出时才显示滑动指引；首次滑动后淡出 */
+function grInitScroll(){
+  if(!('ResizeObserver' in window)) return;
+  const ro = new ResizeObserver(entries=>{
+    entries.forEach(en=>{
+      const sc = en.target;
+      const box = sc.closest('.gr-table-box'); if(!box) return;
+      const hint = box.querySelector('.gr-scroll-hint'); if(!hint) return;
+      const overflow = sc.scrollWidth - sc.clientWidth > 2;
+      hint.style.display = overflow ? 'flex' : 'none';
+      if(!overflow) hint.classList.remove('faded');
+    });
+  });
+  document.querySelectorAll('.gr-table-scroll').forEach(sc=>{
+    ro.observe(sc);
+    sc.addEventListener('scroll', ()=>{
+      const box = sc.closest('.gr-table-box');
+      const h = box && box.querySelector('.gr-scroll-hint');
+      if(h) h.classList.add('faded');
+    }, {passive:true});
+  });
+}
+/* 收集所有奖励设置表数据（仅统计可见的 gr-block）。
+   返回数组：[{game, gameName, brand, period, blocks:[{title, rows:[{cells:[...], cols:[...]}], note}]}] */
+function grCollectAll(){
+  const root = document.getElementById('gameRewardContainer');
+  if(!root) return [];
+  const out = [];
+  root.querySelectorAll('.gr-block').forEach(bk=>{
+    if(bk.style.display === 'none') return; // 只收集已选中游戏
+    const game = bk.getAttribute('data-game');
+    const gameName = (GAME_CFG[game] && GAME_CFG[game].name) || game;
+    const brandEl = root.querySelector('#grGlobalBrand .gr-brand');
+    const brand = brandEl ? brandEl.value.trim() : '';
+    const periodEl = bk.querySelector('.gr-period-opt.selected');
+    const period = periodEl ? periodEl.textContent.trim() : '';
+    const blocks = [];
+    bk.querySelectorAll('.gr-sub').forEach(sub=>{
+      const titleEl = sub.querySelector('.gr-sub-t');
+      if(!titleEl) return;
+      const title = titleEl.textContent.trim();
+      const noteEl = sub.parentElement ? sub.parentElement.querySelector('.gr-note') : null;
+      const tbody = sub.querySelector('tbody[data-cols]');
+      if(!tbody) return;
+      const cols = JSON.parse(tbody.getAttribute('data-cols') || '[]');
+      const rows = [];
+      tbody.querySelectorAll('tr').forEach(tr=>{
+        const cells = [];
+        tr.querySelectorAll('td').forEach((td, idx)=>{
+          if(td.querySelector('button.gr-del')) return; // 跳过删除列
+          let val = '';
+          const inp = td.querySelector('input, select, textarea');
+          if(inp){ val = (inp.value !== undefined ? inp.value : inp.textContent).trim(); }
+          else { val = td.textContent.trim(); }
+          if(cols[idx] && cols[idx].calc){ val = td.classList.contains('gstock') ? td.textContent.trim() : val; }
+          cells.push(val);
+        });
+        if(cells.length && !(cells.length === 1 && cells[0]==='')) rows.push({cells, cols});
+      });
+      if(rows.length) blocks.push({title, rows, cols});
+    });
+    if(blocks.length) out.push({game, gameName, brand, period, blocks});
+  });
+  return out;
+}
+/* 把收集到的奖励表数据渲染成纯文本（用于复制/下载/邮件） */
+function grToPlainText(grData){
+  if(!grData.length) return '   （未填写奖励设置）';
+  let s = '';
+  grData.forEach(g=>{
+    s += '\n   ▸ '+g.gameName+(g.brand?'（品牌：'+g.brand+'）':'')+(g.period?' [合作周期：'+g.period+']':'')+'\n';
+    g.blocks.forEach(b=>{
+      s += '     · '+b.title+'\n';
+      b.rows.forEach(r=>{
+        // 拼接非空单元格
+        const parts = r.cells.map((c,i)=>{
+          const colName = (b.cols[i] && (b.cols[i].f==='rdesc'?'奖励说明':b.cols[i].f)) || '';
+          return (colName?colName+'：':'')+c;
+        }).filter(x=>x && x.split('：').slice(1).join('')!=='');
+        s += '       - '+r.cells.join(' | ')+'\n';
+      });
+    });
+  });
+  return s.trim();
+}
+/* 把收集到的奖励表数据渲染成 HTML（用于汇总卡片） */
+function grToHTML(grData){
+  if(!grData.length) return '<span style="color:#9CA3AF;">未填写奖励设置</span>';
+  let h = '';
+  grData.forEach(g=>{
+    h += '<div style="margin:8px 0 12px;padding:10px 12px;background:#F8FAFF;border:1px solid #E3ECFB;border-radius:8px;">';
+    h += '<div style="font-weight:700;font-size:12.5px;color:#1A4B8C;margin-bottom:6px;">🎮 '+g.gameName
+       + (g.brand?' <span class="rb-tag rb-tag-blue" style="margin-left:6px;">品牌：'+g.brand+'</span>':'')
+       + (g.period?' <span style="font-size:10.5px;color:#6B7280;margin-left:6px;">合作周期：'+g.period+'</span>':'')
+       + '</div>';
+    g.blocks.forEach(b=>{
+      h += '<div style="font-size:11.5px;font-weight:600;color:#374151;margin:8px 0 4px;">· '+b.title+'</div>';
+      b.rows.forEach(r=>{
+        h += '<div style="font-size:11px;line-height:1.7;color:#374151;padding:4px 8px;background:#fff;border:1px solid #EEF2F7;border-radius:6px;margin-bottom:4px;">'
+           + r.cells.map((c,i)=>{
+               const cn = (b.cols[i] && (b.cols[i].f==='rdesc'?'奖励说明':b.cols[i].f))||'';
+               return (cn?('<span style="color:#9CA3AF;">'+cn+'：</span>'):'')+'<span style="color:#111827;">'+c+'</span>';
+             }).join(' &nbsp;·&nbsp; ')
+           + '</div>';
+      });
+    });
+    h += '</div>';
+  });
+  return h;
+}
 function grInit(){
   const box = document.getElementById('gameRewardContainer');
   box.innerHTML = '<div class="gr-global-brand" id="grGlobalBrand" style="display:none"><span class="gb-icon">🏷️</span><label>品牌名称<span class="req">*</span></label><input class="gr-brand" placeholder="请填写本次合作品牌名称（全游戏共用）"><span class="gr-brand-hint">一次填写，王者 / 和平 / 掼蛋 奖励表共用</span></div>'
@@ -1129,7 +1270,8 @@ function grInit(){
     }
     cfg.blocks.forEach(b=>{
       h += '<div class="gr-sub"><div class="gr-sub-t">'+b.t+'</div>';
-      h += '<table class="gr-table"><thead><tr>'+b.head.map(x=>'<th'+(x==='奖励说明'?' class="col-rdesc"':'')+'>'+x+'</th>').join('')+'<th style="width:50px"></th></tr></thead><tbody data-cols=\''+JSON.stringify(b.cols)+'\'>'+b.seed.map(r=>grRowHTML(b.cols,r)).join('')+'</tbody></table>';
+      h += '<div class="gr-table-box">'+grScrollHintHTML()
+         + '<div class="gr-table-scroll"><table class="gr-table gr-table--wide"><thead><tr>'+b.head.map(x=>'<th'+(x==='奖励说明'?' class="col-rdesc"':'')+'>'+x+'</th>').join('')+'<th style="width:50px"></th></tr></thead><tbody data-cols=\''+JSON.stringify(b.cols)+'\'>'+b.seed.map(r=>grRowHTML(b.cols,r)).join('')+'</tbody></table></div></div>';
       h += '<button class="gr-add" onclick="grAddRow(this)">+ 新增一行</button></div>';
     });
     if(cfg.lottery){
@@ -1207,6 +1349,15 @@ function grRecalcBlock(bk){
   });
 }
 function grRecalcScope(el){ const bk = el.closest('.gr-block'); if(bk) grRecalcBlock(bk); }
+function grRdescCount(ta){
+  const td = ta.closest('td');
+  const cnt = td ? td.querySelector('.gr-rdesc-count') : null;
+  if(!cnt) return;
+  const max = parseInt(cnt.getAttribute('data-max')) || 200;
+  const n = ta.value.length;
+  cnt.textContent = n + '/' + max;
+  cnt.classList.toggle('over', n >= max);
+}
 function grAddRow(btn){
   const sub = btn.closest('.gr-sub');
   const tb = sub.querySelector('tbody');
