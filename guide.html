@@ -1185,25 +1185,50 @@ function grCollectAll(){
       const titleEl = sub.querySelector('.gr-sub-t');
       if(!titleEl) return;
       const title = titleEl.textContent.trim();
-      const noteEl = sub.parentElement ? sub.parentElement.querySelector('.gr-note') : null;
       const tbody = sub.querySelector('tbody[data-cols]');
-      if(!tbody) return;
-      const cols = JSON.parse(tbody.getAttribute('data-cols') || '[]');
-      const rows = [];
-      tbody.querySelectorAll('tr').forEach(tr=>{
-        const cells = [];
-        tr.querySelectorAll('td').forEach((td, idx)=>{
-          if(td.querySelector('button.gr-del')) return; // 跳过删除列
-          let val = '';
-          const inp = td.querySelector('input, select, textarea');
-          if(inp){ val = (inp.value !== undefined ? inp.value : inp.textContent).trim(); }
-          else { val = td.textContent.trim(); }
-          if(cols[idx] && cols[idx].calc){ val = td.classList.contains('gstock') ? td.textContent.trim() : val; }
-          cells.push(val);
+      let cols = [];
+      let rows = [];
+      if(tbody){
+        // 普通奖励表（排名奖励等，含 data-cols）
+        cols = JSON.parse(tbody.getAttribute('data-cols') || '[]');
+        tbody.querySelectorAll('tr').forEach(tr=>{
+          const cells = [];
+          tr.querySelectorAll('td').forEach((td, idx)=>{
+            if(td.querySelector('button.gr-del')) return; // 跳过删除列
+            let val = '';
+            const inp = td.querySelector('input, select, textarea');
+            if(inp){ val = (inp.value !== undefined ? inp.value : inp.textContent).trim(); }
+            else { val = td.textContent.trim(); }
+            if(cols[idx] && cols[idx].calc){ val = td.classList.contains('gstock') ? td.textContent.trim() : val; }
+            cells.push(val);
+          });
+          if(cells.length && !(cells.length === 1 && cells[0]==='')) rows.push({cells, cols});
         });
-        if(cells.length && !(cells.length === 1 && cells[0]==='')) rows.push({cells, cols});
+      } else if(sub.style.display !== 'none'){
+        // 抽奖奖池表（无 data-cols 的 tbody，如「抽奖奖励设置」）；仅当该区块可见（已勾选抽奖任务）时收集
+        const lotTbody = sub.querySelector('tbody');
+        if(lotTbody && lotTbody.querySelector('input')){
+          cols = [{f:'概率'},{f:'奖励内容'},{f:'总库存'}];
+          lotTbody.querySelectorAll('tr').forEach(tr=>{
+            const cells = [];
+            tr.querySelectorAll('td').forEach(td=>{
+              if(td.querySelector('button.gr-del')) return;
+              const inp = td.querySelector('input, select, textarea');
+              cells.push(inp ? (inp.value||'').trim() : td.textContent.trim());
+            });
+            if(cells.some(c=>c!=='')) rows.push({cells, cols}); // 跳过整行空白
+          });
+        }
+      }
+      // 独立字段（如「抽奖任务」文本输入），并入区块标题一起展示
+      const fieldVals = [];
+      sub.querySelectorAll('.gr-field').forEach(f=>{
+        const lbl = f.querySelector('label'); const inp = f.querySelector('input, select, textarea');
+        if(lbl && inp){ const v=(inp.value||'').trim(); if(v) fieldVals.push(lbl.textContent.trim()+'：'+v); }
       });
-      if(rows.length) blocks.push({title, rows, cols});
+      const fullTitle = title + (fieldVals.length ? '（'+fieldVals.join('；')+'）' : '');
+      if(rows.length) blocks.push({title: fullTitle, rows, cols});
+      else if(fieldVals.length) blocks.push({title: fullTitle, rows: [], cols: []});
     });
     if(blocks.length) out.push({game, gameName, brand, period, blocks});
   });
@@ -1416,6 +1441,7 @@ function submitToTencentDoc(){
     // 合作游戏 & 奖励设置
     let subGames = [];
     document.querySelectorAll('.game-card.selected').forEach(c => subGames.push(GAME_CFG[c.dataset.game].name));
+    const grData = grCollectAll();
 
     // 构建纯文本（用于复制和下载）
     const plainText = `【商户赛·品牌需求提交单】
@@ -1440,6 +1466,7 @@ ${cities.length ? cities.map(c => '   • '+c).join('\n') : '   （未选择，�
 
 🎮 合作游戏 & 奖励设置
 ${subGames.length ? subGames.map(n => '   • '+n).join('\n') : '   （未选择）'}
+${grToPlainText(grData)}
 
 💡 合作建议参考
 ${suggestions.map(s => '   • '+s).join('\n')}
@@ -1527,6 +1554,7 @@ ${suggestions.map(s => '   • '+s).join('\n')}
             <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#166534;width:120px;text-align:left;vertical-align:top;">🎲 抽奖任务</td><td style="padding:6px 10px;border:1px solid #E5E7EB;">${taskStr === '需要' ? '<span style="color:#166534;font-weight:700;">✅ 需要</span>'+ (taskOpts.length ? '<br/>引流目标：'+taskOpts.join(' / ') : '') : '<span style="color:#9CA3AF;">❌ 不需要</span>'}</td></tr>
             ${hasMiniProg ? `<tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#92400E;width:120px;text-align:left;vertical-align:top;">📱 小程序信息</td><td style="padding:6px 10px;border:1px solid #E5E7EB;line-height:2;">AppID：<b>${miniAppId}</b><br/>Logo：<b>${miniLogoUrl}</b><br/>Path：<b>${miniPath}</b></td></tr>` : ''}
             <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#1A4B8C;width:120px;text-align:left;vertical-align:top;">📍 主推城市</td><td style="padding:6px 10px;border:1px solid #E5E7EB;">${cities.length ? cities.map(c => '• '+c).join('<br/>') + `<br/><small style="color:#6B7280;">共 ${cities.length} 个城市</small>` : '<span style="color:#9CA3AF;">（未选择，全国投放）</span>'}</td></tr>
+            <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#6B7280;width:120px;text-align:left;vertical-align:top;">🎮 合作游戏 & 奖励设置</td><td style="padding:6px 10px;border:1px solid #E5E7EB;">${subGames.length ? subGames.map(n => '• '+n).join('<br/>') : '<span style="color:#9CA3AF;">（未选择）</span>'}${grToHTML(grData)}</td></tr>
             <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#6B7280;width:120px;text-align:left;vertical-align:top;">💡 合作建议</td><td style="padding:6px 10px;border:1px solid #E5E7EB;line-height:1.9;font-size:11.5px;">${suggestions.map(s => '• '+s).join('<br/>')}</td></tr>
         </table>
     </div>
@@ -1612,7 +1640,7 @@ async function pushToWeComBot(){
     grData.forEach(g=>{
       L.push('**🎮 ' + g.gameName + '**' + (g.brand?(' 品牌：'+g.brand):'') + (g.period?(' 周期：'+g.period):''));
       g.blocks.forEach(b=>{
-        L.push('> · ' + b.title + '（共' + b.rows.length + '行）');
+        L.push('> · ' + b.title + (b.rows.length ? '（共'+b.rows.length+'行）' : ''));
         b.rows.slice(0,8).forEach(r=>{ L.push('>   - ' + r.cells.join(' | ')); });
         if(b.rows.length>8) L.push('>   - …（其余'+(b.rows.length-8)+'行见完整版）');
       });
