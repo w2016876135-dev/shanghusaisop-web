@@ -1185,50 +1185,25 @@ function grCollectAll(){
       const titleEl = sub.querySelector('.gr-sub-t');
       if(!titleEl) return;
       const title = titleEl.textContent.trim();
+      const noteEl = sub.parentElement ? sub.parentElement.querySelector('.gr-note') : null;
       const tbody = sub.querySelector('tbody[data-cols]');
-      let cols = [];
-      let rows = [];
-      if(tbody){
-        // 普通奖励表（排名奖励等，含 data-cols）
-        cols = JSON.parse(tbody.getAttribute('data-cols') || '[]');
-        tbody.querySelectorAll('tr').forEach(tr=>{
-          const cells = [];
-          tr.querySelectorAll('td').forEach((td, idx)=>{
-            if(td.querySelector('button.gr-del')) return; // 跳过删除列
-            let val = '';
-            const inp = td.querySelector('input, select, textarea');
-            if(inp){ val = (inp.value !== undefined ? inp.value : inp.textContent).trim(); }
-            else { val = td.textContent.trim(); }
-            if(cols[idx] && cols[idx].calc){ val = td.classList.contains('gstock') ? td.textContent.trim() : val; }
-            cells.push(val);
-          });
-          if(cells.length && !(cells.length === 1 && cells[0]==='')) rows.push({cells, cols});
+      if(!tbody) return;
+      const cols = JSON.parse(tbody.getAttribute('data-cols') || '[]');
+      const rows = [];
+      tbody.querySelectorAll('tr').forEach(tr=>{
+        const cells = [];
+        tr.querySelectorAll('td').forEach((td, idx)=>{
+          if(td.querySelector('button.gr-del')) return; // 跳过删除列
+          let val = '';
+          const inp = td.querySelector('input, select, textarea');
+          if(inp){ val = (inp.value !== undefined ? inp.value : inp.textContent).trim(); }
+          else { val = td.textContent.trim(); }
+          if(cols[idx] && cols[idx].calc){ val = td.classList.contains('gstock') ? td.textContent.trim() : val; }
+          cells.push(val);
         });
-      } else if(sub.style.display !== 'none'){
-        // 抽奖奖池表（无 data-cols 的 tbody，如「抽奖奖励设置」）；仅当该区块可见（已勾选抽奖任务）时收集
-        const lotTbody = sub.querySelector('tbody');
-        if(lotTbody && lotTbody.querySelector('input')){
-          cols = [{f:'概率'},{f:'奖励内容'},{f:'总库存'}];
-          lotTbody.querySelectorAll('tr').forEach(tr=>{
-            const cells = [];
-            tr.querySelectorAll('td').forEach(td=>{
-              if(td.querySelector('button.gr-del')) return;
-              const inp = td.querySelector('input, select, textarea');
-              cells.push(inp ? (inp.value||'').trim() : td.textContent.trim());
-            });
-            if(cells.some(c=>c!=='')) rows.push({cells, cols}); // 跳过整行空白
-          });
-        }
-      }
-      // 独立字段（如「抽奖任务」文本输入），并入区块标题一起展示
-      const fieldVals = [];
-      sub.querySelectorAll('.gr-field').forEach(f=>{
-        const lbl = f.querySelector('label'); const inp = f.querySelector('input, select, textarea');
-        if(lbl && inp){ const v=(inp.value||'').trim(); if(v) fieldVals.push(lbl.textContent.trim()+'：'+v); }
+        if(cells.length && !(cells.length === 1 && cells[0]==='')) rows.push({cells, cols});
       });
-      const fullTitle = title + (fieldVals.length ? '（'+fieldVals.join('；')+'）' : '');
-      if(rows.length) blocks.push({title: fullTitle, rows, cols});
-      else if(fieldVals.length) blocks.push({title: fullTitle, rows: [], cols: []});
+      if(rows.length) blocks.push({title, rows, cols});
     });
     if(blocks.length) out.push({game, gameName, brand, period, blocks});
   });
@@ -1441,7 +1416,6 @@ function submitToTencentDoc(){
     // 合作游戏 & 奖励设置
     let subGames = [];
     document.querySelectorAll('.game-card.selected').forEach(c => subGames.push(GAME_CFG[c.dataset.game].name));
-    const grData = grCollectAll();
 
     // 构建纯文本（用于复制和下载）
     const plainText = `【商户赛·品牌需求提交单】
@@ -1466,7 +1440,6 @@ ${cities.length ? cities.map(c => '   • '+c).join('\n') : '   （未选择，�
 
 🎮 合作游戏 & 奖励设置
 ${subGames.length ? subGames.map(n => '   • '+n).join('\n') : '   （未选择）'}
-${grToPlainText(grData)}
 
 💡 合作建议参考
 ${suggestions.map(s => '   • '+s).join('\n')}
@@ -1554,21 +1527,20 @@ ${suggestions.map(s => '   • '+s).join('\n')}
             <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#166534;width:120px;text-align:left;vertical-align:top;">🎲 抽奖任务</td><td style="padding:6px 10px;border:1px solid #E5E7EB;">${taskStr === '需要' ? '<span style="color:#166534;font-weight:700;">✅ 需要</span>'+ (taskOpts.length ? '<br/>引流目标：'+taskOpts.join(' / ') : '') : '<span style="color:#9CA3AF;">❌ 不需要</span>'}</td></tr>
             ${hasMiniProg ? `<tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#92400E;width:120px;text-align:left;vertical-align:top;">📱 小程序信息</td><td style="padding:6px 10px;border:1px solid #E5E7EB;line-height:2;">AppID：<b>${miniAppId}</b><br/>Logo：<b>${miniLogoUrl}</b><br/>Path：<b>${miniPath}</b></td></tr>` : ''}
             <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#1A4B8C;width:120px;text-align:left;vertical-align:top;">📍 主推城市</td><td style="padding:6px 10px;border:1px solid #E5E7EB;">${cities.length ? cities.map(c => '• '+c).join('<br/>') + `<br/><small style="color:#6B7280;">共 ${cities.length} 个城市</small>` : '<span style="color:#9CA3AF;">（未选择，全国投放）</span>'}</td></tr>
-            <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#6B7280;width:120px;text-align:left;vertical-align:top;">🎮 合作游戏 & 奖励设置</td><td style="padding:6px 10px;border:1px solid #E5E7EB;">${subGames.length ? subGames.map(n => '• '+n).join('<br/>') : '<span style="color:#9CA3AF;">（未选择）</span>'}${grToHTML(grData)}</td></tr>
             <tr><td style="padding:6px 10px;background:#F3F4F6;border:1px solid #E5E7EB;font-weight:700;color:#6B7280;width:120px;text-align:left;vertical-align:top;">💡 合作建议</td><td style="padding:6px 10px;border:1px solid #E5E7EB;line-height:1.9;font-size:11.5px;">${suggestions.map(s => '• '+s).join('<br/>')}</td></tr>
         </table>
     </div>
 </div>
 
-<!-- 企微群推送区（群机器人 Webhook，零中转） -->
+<!-- 企微智能表收集区（中转 Worker, 不暴露凭据） -->
 <div style="margin-top:14px;padding:12px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
-  <div style="font-size:12px;font-weight:700;color:#0369A1;margin-bottom:6px;">📲 一键推送到企业微信群（机器人 Webhook）</div>
+  <div style="font-size:12px;font-weight:700;color:#0369A1;margin-bottom:6px;">📥 一键收集到企业微信智能表（中转地址）</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <input id="wecomWebhook" placeholder="粘贴群机器人 Webhook 地址" value="${localStorage.getItem('wecomWebhook')||''}" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
-    <button onclick="saveWecomWebhook()" class="rb-btn" style="background:#64748B;color:#fff;border:none;min-width:64px;">💾 记住</button>
-    <button id="wecomPushBtn" onclick="pushToWeComBot()" class="rb-btn" style="background:linear-gradient(135deg,#07C160,#059B4A);color:#fff;border:none;box-shadow:0 2px 8px rgba(7,193,96,.25);min-width:84px;">📤 推送</button>
+    <input id="relayUrl" placeholder="粘贴中转地址（Cloudflare/SCF 的 /submit URL）" value="${localStorage.getItem('relayUrl')||''}" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
+    <button onclick="saveRelayUrl()" class="rb-btn" style="background:#64748B;color:#fff;border:none;min-width:64px;">💾 记住</button>
+    <button id="relayPushBtn" onclick="pushToWeComSheet()" class="rb-btn" style="background:linear-gradient(135deg,#07C160,#059B4A);color:#fff;border:none;box-shadow:0 2px 8px rgba(7,193,96,.25);min-width:84px;">📤 推送</button>
   </div>
-  <div style="font-size:10px;color:#64748B;margin-top:6px;">Webhook 含密钥，仅建议用于专用群；地址仅保存在本机浏览器。</div>
+  <div style="font-size:10px;color:#64748B;margin-top:6px;">中转地址仅保存在本机浏览器；数据经中转写入你指定的企微智能表。</div>
 </div>
 
 <!-- 操作按钮区 -->
@@ -1603,63 +1575,39 @@ ${suggestions.map(s => '   • '+s).join('\n')}
     document.getElementById('resultPanel').classList.add('show');
 }
 
-// ====== 企微群机器人推送（Webhook，零中转）======
-function saveWecomWebhook(){
-  const el = document.getElementById('wecomWebhook');
+// ====== 企微智能表收集中转（Worker，不暴露凭据）======
+function saveRelayUrl(){
+  const el = document.getElementById('relayUrl');
   const v = el && el.value.trim();
-  if(!v){ showActionResult('⚠️ 请先粘贴 Webhook 地址', '#DC2626'); return; }
-  localStorage.setItem('wecomWebhook', v);
-  showActionResult('💾 已记住本机 Webhook 地址', '#0369A1');
+  if(!v){ showActionResult('⚠️ 请先粘贴中转地址', '#DC2626'); return; }
+  localStorage.setItem('relayUrl', v);
+  showActionResult('💾 已记住本机中转地址', '#0369A1');
 }
 
 function _byteLen(s){ return new Blob([s]).size; }
-function _truncBytes(s, max){
-  let n = 0;
-  for(let i=0;i<s.length;i++){ n += _byteLen(s[i]); if(n>max) return s.slice(0,i); }
-  return s;
+
+function _grToGames(){
+  // 复刻 grCollectAll 的输出结构（页面已定义则直接复用）
+  if(typeof grCollectAll==='function') return grCollectAll();
+  return [];
 }
 
-async function pushToWeComBot(){
-  const input = document.getElementById('wecomWebhook');
-  const url = (input && input.value.trim()) || localStorage.getItem('wecomWebhook') || '';
-  if(!url){ showActionResult('⚠️ 请先粘贴并「记住」群机器人 Webhook 地址', '#DC2626'); return; }
+async function pushToWeComSheet(){
+  const input = document.getElementById('relayUrl');
+  const url = (input && input.value.trim()) || localStorage.getItem('relayUrl') || '';
+  if(!url){ showActionResult('⚠️ 请先粘贴并「记住」中转地址（Cloudflare/SCF 的 /submit）', '#DC2626'); return; }
   const d = window._submitData || {};
-  const grData = (typeof grCollectAll==='function') ? grCollectAll() : [];
-  const L = [];
-  L.push('# 📋 商户赛品牌需求提交');
-  L.push('> 提交时间：' + new Date().toLocaleString('zh-CN'));
-  L.push('> 来源：SOP v5.0 Web 自动提交');
-  L.push('');
-  L.push('**📅 赛事周期**：' + (d.startDate||'未选择') + ' → ' + (d.endDate||'未选择') + (d.durationText?('（'+d.durationText+'）'):''));
-  L.push('**💰 奖励类型**：' + (d.rewardTypes&&d.rewardTypes.length? d.rewardTypes.join('、'):'未选择'));
-  L.push('**🎲 抽奖任务**：' + (d.taskStr||'不需要') + (d.taskOpts&&d.taskOpts.length?('（'+d.taskOpts.join('、')+'）'):''));
-  L.push('**📍 主推城市**：' + (d.cities&&d.cities.length? d.cities.join('、')+'（共'+d.cities.length+'个）':'全国投放'));
-  if(d.hasMiniProg) L.push('**📱 小程序**：AppID=' + (d.miniAppId||'') + ' Path=' + (d.miniPath||''));
-  L.push('');
-  if(grData.length){
-    grData.forEach(g=>{
-      L.push('**🎮 ' + g.gameName + '**' + (g.brand?(' 品牌：'+g.brand):'') + (g.period?(' 周期：'+g.period):''));
-      g.blocks.forEach(b=>{
-        L.push('> · ' + b.title + (b.rows.length ? '（共'+b.rows.length+'行）' : ''));
-        b.rows.slice(0,8).forEach(r=>{ L.push('>   - ' + r.cells.join(' | ')); });
-        if(b.rows.length>8) L.push('>   - …（其余'+(b.rows.length-8)+'行见完整版）');
-      });
-      L.push('');
-    });
-  } else { L.push('> 未填写奖励设置'); L.push(''); }
-  L.push('> 完整结构化数据请使用面板「复制全文」');
-  let md = L.join('\n');
-  const MAX = 4000;
-  if(_byteLen(md) > MAX) md = _truncBytes(md, MAX) + '\n> …（内容过长已截断，完整版见「复制全文」）';
-  const btn = document.getElementById('wecomPushBtn');
+  const games = _grToGames();
+  const payload = { meta: d, games: games };
+  const btn = document.getElementById('relayPushBtn');
   if(btn){ btn.disabled = true; btn.textContent = '📤 推送中…'; }
   try{
-    const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({msgtype:'markdown', markdown:{content: md}}) });
-    const j = await resp.json();
-    if(j.errcode === 0) showActionResult('✅ 已推送到企业微信群', '#07C160');
-    else showActionResult('⚠️ 推送失败：' + (j.errmsg||'未知错误') + '（errcode='+j.errcode+'）', '#DC2626');
+    const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const j = await resp.json().catch(()=>({}));
+    if(j.ok){ showActionResult('✅ 已写入企业微信智能表（常规需求 + 奖励设置）', '#07C160'); }
+    else { showActionResult('⚠️ 写入失败：' + (j.error||JSON.stringify(j)), '#DC2626'); }
   }catch(e){
-    showActionResult('⚠️ 推送出错：' + e.message + '（多为 Webhook 地址错误或被跨域拦截）', '#DC2626');
+    showActionResult('⚠️ 推送出错：' + e.message + '（检查中转地址是否可达）', '#DC2626');
   }finally{
     if(btn){ btn.disabled = false; btn.textContent = '📤 推送'; }
   }
