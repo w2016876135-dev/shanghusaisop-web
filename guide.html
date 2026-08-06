@@ -1464,8 +1464,11 @@ ${suggestions.map(s => '   • '+s).join('\n')}
 期待您的回复，谢谢！`
     );
 
+    // 品牌（顶部单框共用）+ 提交时间，供企微智能表收集使用
+    const _brandEl = document.querySelector('#grGlobalBrand .gr-brand');
+    const _brand = _brandEl ? _brandEl.value.trim() : '';
     // 存储全局数据供按钮调用
-    window._submitData = { plainText, emailBody, startDate, endDate, durationText, rewardTypes, taskStr, taskOpts, hasMiniProg, miniAppId, miniLogoUrl, miniPath, cities };
+    window._submitData = { plainText, emailBody, submitTime: new Date().toLocaleString('zh-CN'), brand: _brand, startDate, endDate, durationText, rewardTypes, taskStr, taskOpts, hasMiniProg, miniAppId, miniLogoUrl, miniPath, cities };
 
     // 构建确认面板HTML
     const confirmHtml = `
