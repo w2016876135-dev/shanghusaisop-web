@@ -1535,15 +1535,30 @@ ${suggestions.map(s => '   • '+s).join('\n')}
     </div>
 </div>
 
-<!-- 企微智能表收集区（中转 Worker, 不暴露凭据） -->
+<!-- 企微智能表收集区（工作表 Webhook 直发：零凭据、免中转、不碰企业后台） -->
 <div style="margin-top:14px;padding:12px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
-  <div style="font-size:12px;font-weight:700;color:#0369A1;margin-bottom:6px;">📥 一键收集到企业微信智能表（中转地址）</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <input id="relayUrl" placeholder="粘贴中转地址（Cloudflare/SCF 的 /submit URL）" value="${localStorage.getItem('relayUrl')||''}" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
-    <button onclick="saveRelayUrl()" class="rb-btn" style="background:#64748B;color:#fff;border:none;min-width:64px;">💾 记住</button>
-    <button id="relayPushBtn" onclick="pushToWeComSheet()" class="rb-btn" style="background:linear-gradient(135deg,#07C160,#059B4A);color:#fff;border:none;box-shadow:0 2px 8px rgba(7,193,96,.25);min-width:84px;">📤 推送</button>
+  <div style="font-size:12px;font-weight:700;color:#0369A1;margin-bottom:2px;">📥 一键收集到企业微信智能表</div>
+  <div style="font-size:10px;color:#0891B2;margin-bottom:8px;">工作表 Webhook 直发 · 无需企业后台 / 无需 corpid、secret / 无需服务器</div>
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    <input id="whUrl1" placeholder="Webhook ①「常规需求」子表地址（qyapi…/smartsheet/webhook?key=…）" value="${localStorage.getItem('whUrl1')||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
+    <input id="whUrl2" placeholder="Webhook ②「奖励设置」子表地址（留空则只写第一张表）" value="${localStorage.getItem('whUrl2')||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
   </div>
-  <div style="font-size:10px;color:#64748B;margin-top:6px;">中转地址仅保存在本机浏览器；数据经中转写入你指定的企微智能表。</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+    <button onclick="whSaveCfg()" class="rb-btn" style="background:#64748B;color:#fff;border:none;min-width:64px;">💾 记住</button>
+    <button id="whPushBtn" onclick="whPush()" class="rb-btn" style="flex:1;min-width:96px;justify-content:center;background:linear-gradient(135deg,#07C160,#059B4A);color:#fff;border:none;box-shadow:0 2px 8px rgba(7,193,96,.25);">📤 推送到智能表</button>
+    <button onclick="whCopyTSV()" class="rb-btn" style="background:#0EA5E9;color:#fff;border:none;min-width:104px;">📋 复制表格行</button>
+    <button onclick="whToggleAdv()" class="rb-btn" style="background:#E2E8F0;color:#334155;border:none;min-width:64px;">⚙️ 高级</button>
+  </div>
+  <div id="whAdv" style="display:none;margin-top:8px;padding:10px;background:#fff;border:1px dashed #BAE6FD;border-radius:8px;">
+    <div style="font-size:11px;font-weight:700;color:#0369A1;margin-bottom:4px;">字段ID映射（可选）</div>
+    <div style="font-size:10px;color:#64748B;margin-bottom:6px;line-height:1.7;">默认按<b>列名</b>写入，通常无需填写。仅当推送报「字段不存在 / invalid field」时，才在智能表字段设置里复制 fieldId 填这里，每行一条：<code>列名=字段ID</code></div>
+    <textarea id="whMap1" placeholder="①常规需求表映射，例：&#10;提交时间=fldXXXX&#10;品牌=fldYYYY" style="width:100%;box-sizing:border-box;height:60px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap1')||''}</textarea>
+    <textarea id="whMap2" placeholder="②奖励设置表映射（同上格式）" style="width:100%;box-sizing:border-box;height:60px;margin-top:6px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap2')||''}</textarea>
+    <div style="font-size:11px;font-weight:700;color:#92400E;margin:10px 0 4px;">中转地址（可选兜底）</div>
+    <div style="font-size:10px;color:#64748B;margin-bottom:6px;">若企业网络禁止浏览器直连 qyapi，可改走自建中转；填了此项则优先走中转。</div>
+    <input id="relayUrl" placeholder="留空即可（仅中转方案需要）" value="${localStorage.getItem('relayUrl')||''}" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;">
+  </div>
+  <div style="font-size:10px;color:#64748B;margin-top:6px;">Webhook 地址与映射仅保存在本机浏览器（localStorage），不上传、不进代码仓库。</div>
 </div>
 
 <!-- 操作按钮区 -->
@@ -1578,14 +1593,24 @@ ${suggestions.map(s => '   • '+s).join('\n')}
     document.getElementById('resultPanel').classList.add('show');
 }
 
-// ====== 企微智能表收集中转（Worker，不暴露凭据）======
-function saveRelayUrl(){
-  const el = document.getElementById('relayUrl');
-  const v = el && el.value.trim();
-  if(!v){ showActionResult('⚠️ 请先粘贴中转地址', '#DC2626'); return; }
-  localStorage.setItem('relayUrl', v);
-  showActionResult('💾 已记住本机中转地址', '#0369A1');
+// ====== 企微智能表收集：工作表 Webhook 直发（零凭据 / 免中转）======
+function whToggleAdv(){
+  const el = document.getElementById('whAdv');
+  if(el) el.style.display = (el.style.display==='none' ? 'block' : 'none');
 }
+
+function whSaveCfg(){
+  const g = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+  const u1 = g('whUrl1');
+  if(!u1 && !g('relayUrl')){ showActionResult('⚠️ 请先粘贴「常规需求」子表的 Webhook 地址', '#DC2626'); return; }
+  ['whUrl1','whUrl2','whMap1','whMap2','relayUrl'].forEach(id=>{
+    const e = document.getElementById(id);
+    if(e) localStorage.setItem(id, e.value.trim());
+  });
+  showActionResult('💾 已记住（仅存本机浏览器，不上传）', '#0369A1');
+}
+
+function saveRelayUrl(){ whSaveCfg(); }
 
 function _byteLen(s){ return new Blob([s]).size; }
 
@@ -1595,6 +1620,144 @@ function _grToGames(){
   return [];
 }
 
+// 单元格值：企微智能表文本型字段格式
+function _T(s){ return [{ type:'text', text: String(s==null ? '' : s) }]; }
+
+// 解析「列名=字段ID」映射文本
+function _whParseMap(txt){
+  const map = {};
+  String(txt||'').split(/\r?\n/).forEach(line=>{
+    const i = line.indexOf('=');
+    if(i>0){
+      const k = line.slice(0,i).trim(), v = line.slice(i+1).trim();
+      if(k && v) map[k] = v;
+    }
+  });
+  return map;
+}
+
+// 按映射把「列名」换成「字段ID」（未配映射则原样按列名写）
+function _whApplyMap(values, map){
+  if(!map || !Object.keys(map).length) return values;
+  const out = {};
+  Object.keys(values).forEach(k=>{ out[map[k] || k] = values[k]; });
+  return out;
+}
+
+// 按既定列名装配两张子表的记录（与原中转逻辑保持一致）
+function whBuildRecords(){
+  const m = window._submitData || {};
+  const games = _grToGames();
+  const submitTime = m.submitTime || new Date().toLocaleString('zh-CN');
+  const sheet1 = [{
+    values: {
+      '提交时间': _T(submitTime),
+      '品牌': _T(m.brand),
+      '赛事起始': _T(m.startDate),
+      '赛事结束': _T(m.endDate),
+      '周期': _T(m.durationText),
+      '奖励类型': _T((m.rewardTypes||[]).join('、')),
+      '抽奖任务': _T((m.taskStr||'不需要') + ((m.taskOpts && m.taskOpts.length) ? ('（'+m.taskOpts.join('、')+'）') : '')),
+      '主推城市': _T((m.cities && m.cities.length) ? (m.cities.join('、')+'（共'+m.cities.length+'个）') : '全国投放'),
+      '小程序': _T(m.hasMiniProg ? ('AppID='+(m.miniAppId||'')+' Path='+(m.miniPath||'')) : '无'),
+      '来源': _T('SOP Web'),
+      '原始数据': _T(JSON.stringify({meta:m, games:games}))
+    }
+  }];
+  const sheet2 = games.map(g=>{
+    const lines = [];
+    (g.blocks||[]).forEach(b=>{
+      lines.push('· ' + b.title + '（' + ((b.rows||[]).length) + '行）');
+      (b.rows||[]).forEach(r=> lines.push('   - ' + (r.cells||[]).join(' | ')));
+    });
+    return { values: {
+      '提交时间': _T(submitTime),
+      '品牌': _T(g.brand || m.brand),
+      '合作游戏': _T(g.gameName),
+      '周期': _T(g.period || m.durationText),
+      '奖励明细': _T(lines.join('\n')),
+      '来源': _T('SOP Web'),
+      '原始数据': _T(JSON.stringify(g))
+    }};
+  });
+  return { sheet1, sheet2 };
+}
+
+// 发送到一个 Webhook：优先标准 CORS 请求，被浏览器拦截则降级为 no-cors 盲发
+async function _whSend(url, records, mapText){
+  const map = _whParseMap(mapText);
+  const body = JSON.stringify({
+    key_type: 'CELL_VALUE_KEY_TYPE_FIELD_TITLE',
+    records: records.map(r=>({ values: _whApplyMap(r.values, map) }))
+  });
+  try{
+    const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body });
+    const j = await resp.json().catch(()=>({}));
+    if(j && (j.errcode===0 || j.ok)) return { ok:true, blind:false };
+    return { ok:false, blind:false, msg:(j && (j.errmsg||JSON.stringify(j))) || ('HTTP '+resp.status) };
+  }catch(e){
+    // 跨域被拦：改用简单请求盲发（请求可达，但读不到回执）
+    try{
+      await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body });
+      return { ok:true, blind:true };
+    }catch(e2){
+      return { ok:false, blind:false, msg:e2.message || e.message };
+    }
+  }
+}
+
+async function whPush(){
+  const g = id => { const e = document.getElementById(id); return e ? e.value.trim() : (localStorage.getItem(id)||''); };
+  const relay = g('relayUrl');
+  if(relay){ return pushToWeComSheet(); } // 填了中转则优先走中转
+  const u1 = g('whUrl1') || localStorage.getItem('whUrl1') || '';
+  const u2 = g('whUrl2') || localStorage.getItem('whUrl2') || '';
+  if(!u1){ showActionResult('⚠️ 请先粘贴「常规需求」子表的 Webhook 地址并点「记住」', '#DC2626'); return; }
+  const btn = document.getElementById('whPushBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '📤 推送中…'; }
+  try{
+    const { sheet1, sheet2 } = whBuildRecords();
+    const r1 = await _whSend(u1, sheet1, g('whMap1'));
+    let r2 = { ok:true, blind:false, skipped:true };
+    if(u2 && sheet2.length) r2 = await _whSend(u2, sheet2, g('whMap2'));
+    if(r1.ok && r2.ok){
+      if(r1.blind || r2.blind){
+        showActionResult('📨 已发送（浏览器跨域限制读不到回执）→ 请到智能表刷新确认；若没进表请用「📋 复制表格行」粘贴', '#D97706');
+      }else{
+        showActionResult('✅ 已写入智能表：常规需求 1 条' + (u2 && sheet2.length ? ('、奖励设置 '+sheet2.length+' 条') : ''), '#07C160');
+      }
+    }else{
+      const err = (!r1.ok ? ('①'+r1.msg) : '') + (!r2.ok ? (' ②'+r2.msg) : '');
+      showActionResult('⚠️ 写入失败：' + err + '（若提示字段不存在，请在「⚙️ 高级」里配字段ID映射）', '#DC2626');
+    }
+  }catch(e){
+    showActionResult('⚠️ 推送出错：' + e.message, '#DC2626');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '📤 推送到智能表'; }
+  }
+}
+
+// 兜底：复制成 TSV，可直接粘进智能表（100% 可用，不依赖任何网络配置）
+async function whCopyTSV(){
+  const { sheet1, sheet2 } = whBuildRecords();
+  const flat = r => Object.keys(r.values).map(k=>{
+    const v = r.values[k].map(x=>x.text).join('');
+    return v.replace(/\t/g,' ').replace(/\n/g,' ↵ ');
+  }).join('\t');
+  const head = r => Object.keys(r.values).join('\t');
+  let txt = '【常规需求】\n' + head(sheet1[0]) + '\n' + sheet1.map(flat).join('\n');
+  if(sheet2.length) txt += '\n\n【奖励设置】\n' + head(sheet2[0]) + '\n' + sheet2.map(flat).join('\n');
+  try{
+    await navigator.clipboard.writeText(txt);
+    showActionResult('📋 已复制表格行，切到智能表点第一个空单元格 Ctrl+V 即可', '#0EA5E9');
+  }catch(err){
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    showActionResult('📋 已复制表格行（兼容模式）', '#0EA5E9');
+  }
+}
+
 async function pushToWeComSheet(){
   const input = document.getElementById('relayUrl');
   const url = (input && input.value.trim()) || localStorage.getItem('relayUrl') || '';
@@ -1602,7 +1765,7 @@ async function pushToWeComSheet(){
   const d = window._submitData || {};
   const games = _grToGames();
   const payload = { meta: d, games: games };
-  const btn = document.getElementById('relayPushBtn');
+  const btn = document.getElementById('whPushBtn') || document.getElementById('relayPushBtn');
   if(btn){ btn.disabled = true; btn.textContent = '📤 推送中…'; }
   try{
     const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
