@@ -1634,17 +1634,26 @@ function _whLoadSchema(key){
   if(!raw.trim()) return null;
   try { return _whParseSchema(raw); } catch(e){ return null; }
 }
-// 按字段类型把页面值转成 Webhook 要求的格式；返回 undefined 表示应当跳过该列
+// 按字段类型把页面值转成 Webhook 要求的格式；类型不匹配时不静默丢列，而是退化为发文本（落表更稳）
 function _whConvertByType(type, raw){
   if(raw==null) return '';
-  if(type==='number'){ const n=Number(String(raw).replace(/[^\d.\-]/g,'')); return isNaN(n)?undefined:n; }
-  if(type==='date_time'){ let ms=Number(raw); if(isNaN(ms)) ms=Date.parse(raw); return isNaN(ms)?undefined:String(ms); }
+  const s = String(raw).trim();
+  if(type==='number'){
+    // 仅当是干净的数字才发数字，否则退化为原文文本（避免把 "赛期7天"/"AppID=..." 误转成 7/0 丢失）
+    if(/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+    return s;
+  }
+  if(type==='date_time'){
+    let ms=Number(raw); if(isNaN(ms)) ms=Date.parse(raw);
+    if(!isNaN(ms)) return String(ms);
+    return s; // 解析不出时间戳就退化为原文文本
+  }
   if(type==='multiple_select' || type==='single_select'){
     if(Array.isArray(raw)) return raw.map(x=>(x&&x.text!=null)?{text:String(x.text)}:{text:String(x)});
-    return String(raw).split(/[、,，;；]/).map(s=>s.trim()).filter(Boolean).map(s=>({text:s}));
+    return s.split(/[、,，;；]/).map(x=>x.trim()).filter(Boolean).map(x=>({text:x}));
   }
   if(Array.isArray(raw)) return raw.map(x=>(x&&x.text!=null)?String(x.text):String(x)).join('、');
-  return String(raw);
+  return s;
 }
 // 点击「🔍 解析并填充映射」：解析两张表的示例数据，自动填好字段ID映射框
 function whParseSchema(){
