@@ -1551,9 +1551,14 @@ ${suggestions.map(s => '   • '+s).join('\n')}
   </div>
   <div id="whAdv" style="display:none;margin-top:8px;padding:10px;background:#fff;border:1px dashed #BAE6FD;border-radius:8px;">
     <div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:4px;">字段ID映射（必填）</div>
-    <div style="font-size:10px;color:#92400E;margin-bottom:6px;line-height:1.7;"><b>⚠️ Webhook 只能按字段ID写入，不支持列名。</b>在智能表字段设置里逐个复制 fieldId，每行一条：<code>列名=字段ID</code>。例：<code>提交时间=fldXXXX</code>　<code>品牌=fldYYYY</code></div>
+    <div style="font-size:10px;color:#92400E;margin-bottom:6px;line-height:1.7;"><b>⚠️ Webhook 只能按字段ID写入，不支持列名。</b>推荐用下方「📄 示例数据 JSON」一键自动填充；或手动每行一条：<code>列名=字段ID</code>。例：<code>提交时间=fldXXXX</code>　<code>品牌=fldYYYY</code>（手动框可留空，以 JSON 自动填充为准）</div>
     <textarea id="whMap1" placeholder="①常规需求表映射，例：&#10;提交时间=fldXXXX&#10;品牌=fldYYYY" style="width:100%;box-sizing:border-box;height:60px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap1')||''}</textarea>
     <textarea id="whMap2" placeholder="②奖励设置表映射（同上格式）" style="width:100%;box-sizing:border-box;height:60px;margin-top:6px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap2')||''}</textarea>
+    <div style="font-size:11px;font-weight:700;color:#0369A1;margin:10px 0 4px;">📄 一键识别（推荐）：粘贴「示例数据」JSON</div>
+    <div style="font-size:10px;color:#0369A1;margin-bottom:6px;line-height:1.7;">在智能表 Webhook 配置页复制「示例数据」整段 JSON（含 <code>schema</code>）粘到下面，点「解析」即可<b>自动填好字段ID和类型</b>，免去手抄。两张表各粘贴一次（没填则上面的「列名=字段ID」手动映射仍生效）。</div>
+    <textarea id="whSchema1" placeholder="①常规需求表：粘贴示例数据 JSON（含 schema 那段）" style="width:100%;box-sizing:border-box;height:46px;padding:6px 8px;border:1px solid #93C5FD;border-radius:6px;font-size:10px;font-family:monospace;">${localStorage.getItem('whSchema1')||''}</textarea>
+    <textarea id="whSchema2" placeholder="②奖励设置表：粘贴示例数据 JSON" style="width:100%;box-sizing:border-box;height:46px;margin-top:6px;padding:6px 8px;border:1px solid #93C5FD;border-radius:6px;font-size:10px;font-family:monospace;">${localStorage.getItem('whSchema2')||''}</textarea>
+    <button onclick="whParseSchema()" class="rb-btn" style="margin-top:6px;background:#0369A1;color:#fff;border:none;min-width:124px;">🔍 解析并填充映射</button>
     <div style="font-size:11px;font-weight:700;color:#92400E;margin:10px 0 4px;">中转地址（可选兜底）</div>
     <div style="font-size:10px;color:#64748B;margin-bottom:6px;">若企业网络禁止浏览器直连 qyapi，可改走自建中转；填了此项则优先走中转。</div>
     <input id="relayUrl" placeholder="留空即可（仅中转方案需要）" value="${localStorage.getItem('relayUrl')||''}" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;">
@@ -1603,7 +1608,7 @@ function whSaveCfg(){
   const g = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
   const u1 = g('whUrl1');
   if(!u1 && !g('relayUrl')){ showActionResult('⚠️ 请先粘贴「常规需求」子表的 Webhook 地址', '#DC2626'); return; }
-  ['whUrl1','whUrl2','whMap1','whMap2','relayUrl'].forEach(id=>{
+  ['whUrl1','whUrl2','whMap1','whMap2','whSchema1','whSchema2','relayUrl'].forEach(id=>{
     const e = document.getElementById(id);
     if(e) localStorage.setItem(id, e.value.trim());
   });
@@ -1611,6 +1616,53 @@ function whSaveCfg(){
 }
 
 function saveRelayUrl(){ whSaveCfg(); }
+
+// 从「示例数据」JSON 中解析出 列名→字段ID 与 字段ID→类型
+function _whParseSchema(txt){
+  const j = JSON.parse(txt);
+  const schema = j.schema || {};
+  const titleToFieldId = {}, fieldIdToType = {};
+  Object.keys(schema).forEach(fid=>{
+    const t = schema[fid].title, ty = schema[fid].type || 'text';
+    if(t){ titleToFieldId[t] = fid; fieldIdToType[fid] = ty; }
+  });
+  if(!Object.keys(titleToFieldId).length) throw new Error('JSON 里没有 schema，请粘贴「示例数据」整段（含 schema）');
+  return { titleToFieldId, fieldIdToType };
+}
+function _whLoadSchema(key){
+  const raw = localStorage.getItem(key) || '';
+  if(!raw.trim()) return null;
+  try { return _whParseSchema(raw); } catch(e){ return null; }
+}
+// 按字段类型把页面值转成 Webhook 要求的格式；返回 undefined 表示应当跳过该列
+function _whConvertByType(type, raw){
+  if(raw==null) return '';
+  if(type==='number'){ const n=Number(String(raw).replace(/[^\d.\-]/g,'')); return isNaN(n)?undefined:n; }
+  if(type==='date_time'){ let ms=Number(raw); if(isNaN(ms)) ms=Date.parse(raw); return isNaN(ms)?undefined:String(ms); }
+  if(type==='multiple_select' || type==='single_select'){
+    if(Array.isArray(raw)) return raw.map(x=>(x&&x.text!=null)?{text:String(x.text)}:{text:String(x)});
+    return String(raw).split(/[、,，;；]/).map(s=>s.trim()).filter(Boolean).map(s=>({text:s}));
+  }
+  if(Array.isArray(raw)) return raw.map(x=>(x&&x.text!=null)?String(x.text):String(x)).join('、');
+  return String(raw);
+}
+// 点击「🔍 解析并填充映射」：解析两张表的示例数据，自动填好字段ID映射框
+function whParseSchema(){
+  const g = id => { const e=document.getElementById(id); return e?e.value:''; };
+  let done=0; const errs=[];
+  [['whSchema1','whMap1'],['whSchema2','whMap2']].forEach(([sKey,mKey])=>{
+    const raw=g(sKey).trim(); if(!raw) return;
+    try{
+      const sc=_whParseSchema(raw);
+      const lines=Object.keys(sc.titleToFieldId).map(t=>t+'='+sc.titleToFieldId[t]);
+      const me=document.getElementById(mKey); if(me) me.value=lines.join('\n');
+      done++;
+    }catch(e){ errs.push(sKey.replace('whSchema','表')+'：'+e.message); }
+  });
+  if(errs.length) showActionResult('⚠️ 解析失败：'+errs.join('；'), '#DC2626');
+  else if(done) showActionResult('✅ 已解析 '+done+' 张表的字段ID与类型，映射已自动填充（点「💾 记住」保存）', '#07C160');
+  else showActionResult('⚠️ 请把「示例数据」JSON 粘到对应框再点解析', '#DC2626');
+}
 
 function _byteLen(s){ return new Blob([s]).size; }
 
@@ -1684,26 +1736,48 @@ function whBuildRecords(){
 }
 
 // 发送到一个 Webhook：优先标准 CORS 请求，被浏览器拦截则降级为 no-cors 盲发
-async function _whSend(url, records, mapText){
-  const map = _whParseMap(mapText);
-  if(!map || !Object.keys(map).length){
-    return { ok:false, blind:false, msg:'未配置字段ID映射（Webhook 必须按字段ID写入，请在「⚙️ 高级」粘贴 列名=字段ID）' };
+// 优先用 schema（示例数据解析出的 列名→字段ID + 类型）做类型化写入；无 schema 时回退到手动「列名=字段ID」映射
+async function _whSend(url, records, mapText, schema){
+  let titleToFieldId = null, fieldIdToType = {}, useMap = false;
+  if(schema && schema.titleToFieldId && Object.keys(schema.titleToFieldId).length){
+    titleToFieldId = schema.titleToFieldId;
+    fieldIdToType = schema.fieldIdToType || {};
+  } else {
+    const map = _whParseMap(mapText);
+    if(!map || !Object.keys(map).length){
+      return { ok:false, blind:false, msg:'未配置字段ID映射（请在「⚙️ 高级」粘贴 示例数据JSON 或 列名=字段ID）', skipped:[] };
+    }
+    titleToFieldId = map;
+    useMap = true;
   }
-  const body = JSON.stringify({
-    add_records: records.map(r=>({ values: _whApplyMap(r.values, map) }))
+  const out = [];
+  const skipped = new Set();
+  records.forEach(r=>{
+    const vals = {};
+    Object.keys(r.values).forEach(title=>{
+      const fid = titleToFieldId[title];
+      if(!fid){ skipped.add(title); return; }
+      if(useMap){ vals[fid] = String(r.values[title]==null?'':r.values[title]); return; }
+      const ty = fieldIdToType[fid] || 'text';
+      const v = _whConvertByType(ty, r.values[title]);
+      if(v===undefined){ skipped.add(title); return; }   // 类型不匹配（如数字列收到非数字）→ 跳过该列，避免整条报错
+      vals[fid] = v;
+    });
+    out.push({ values: vals });
   });
+  const body = JSON.stringify({ add_records: out });
   try{
     const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body });
     const j = await resp.json().catch(()=>({}));
-    if(j && (j.errcode===0 || j.ok)) return { ok:true, blind:false };
-    return { ok:false, blind:false, msg:(j && (j.errmsg||JSON.stringify(j))) || ('HTTP '+resp.status) };
+    if(j && (j.errcode===0 || j.ok)) return { ok:true, blind:false, skipped: Array.from(skipped) };
+    return { ok:false, blind:false, msg:(j && (j.errmsg||JSON.stringify(j))) || ('HTTP '+resp.status), skipped: Array.from(skipped) };
   }catch(e){
     // 跨域被拦：改用简单请求盲发（请求可达，但读不到回执）
     try{
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body });
-      return { ok:true, blind:true };
+      return { ok:true, blind:true, skipped: Array.from(skipped) };
     }catch(e2){
-      return { ok:false, blind:false, msg:e2.message || e.message };
+      return { ok:false, blind:false, msg:e2.message || e.message, skipped: Array.from(skipped) };
     }
   }
 }
@@ -1719,18 +1793,22 @@ async function whPush(){
   if(btn){ btn.disabled = true; btn.textContent = '📤 推送中…'; }
   try{
     const { sheet1, sheet2 } = whBuildRecords();
-    const r1 = await _whSend(u1, sheet1, g('whMap1'));
-    let r2 = { ok:true, blind:false, skipped:true };
-    if(u2 && sheet2.length) r2 = await _whSend(u2, sheet2, g('whMap2'));
+    const sch1 = _whLoadSchema('whSchema1');
+    const sch2 = _whLoadSchema('whSchema2');
+    const r1 = await _whSend(u1, sheet1, g('whMap1'), sch1);
+    let r2 = { ok:true, blind:false, skipped:[] };
+    if(u2 && sheet2.length) r2 = await _whSend(u2, sheet2, g('whMap2'), sch2);
+    const skipCols = Array.from(new Set([].concat(r1.skipped||[], r2.skipped||[]).filter(Boolean)));
+    const skipMsg = skipCols.length ? ('（已跳过表里没有的列：'+skipCols.join('、')+'，可在智能表补上这些列）') : '';
     if(r1.ok && r2.ok){
       if(r1.blind || r2.blind){
         showActionResult('📨 已发送（浏览器跨域限制读不到回执）→ 请到智能表刷新确认；若没进表请用「📋 复制表格行」粘贴', '#D97706');
       }else{
-        showActionResult('✅ 已写入智能表：常规需求 1 条' + (u2 && sheet2.length ? ('、奖励设置 '+sheet2.length+' 条') : ''), '#07C160');
+        showActionResult('✅ 已写入智能表：常规需求 1 条' + (u2 && sheet2.length ? ('、奖励设置 '+sheet2.length+' 条') : '') + skipMsg, '#07C160');
       }
     }else{
       const err = (!r1.ok ? ('①'+r1.msg) : '') + (!r2.ok ? (' ②'+r2.msg) : '');
-      showActionResult('⚠️ 写入失败：' + err + '（若提示字段不存在，请在「⚙️ 高级」里配字段ID映射）', '#DC2626');
+      showActionResult('⚠️ 写入失败：' + err + '（若提示字段不存在，请在「⚙️ 高级」粘贴示例数据JSON或配字段ID映射）', '#DC2626');
     }
   }catch(e){
     showActionResult('⚠️ 推送出错：' + e.message, '#DC2626');
