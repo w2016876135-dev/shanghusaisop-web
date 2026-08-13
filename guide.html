@@ -1550,8 +1550,8 @@ ${suggestions.map(s => '   • '+s).join('\n')}
     <button onclick="whToggleAdv()" class="rb-btn" style="background:#E2E8F0;color:#334155;border:none;min-width:64px;">⚙️ 高级</button>
   </div>
   <div id="whAdv" style="display:none;margin-top:8px;padding:10px;background:#fff;border:1px dashed #BAE6FD;border-radius:8px;">
-    <div style="font-size:11px;font-weight:700;color:#0369A1;margin-bottom:4px;">字段ID映射（可选）</div>
-    <div style="font-size:10px;color:#64748B;margin-bottom:6px;line-height:1.7;">默认按<b>列名</b>写入，通常无需填写。仅当推送报「字段不存在 / invalid field」时，才在智能表字段设置里复制 fieldId 填这里，每行一条：<code>列名=字段ID</code></div>
+    <div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:4px;">字段ID映射（必填）</div>
+    <div style="font-size:10px;color:#92400E;margin-bottom:6px;line-height:1.7;"><b>⚠️ Webhook 只能按字段ID写入，不支持列名。</b>在智能表字段设置里逐个复制 fieldId，每行一条：<code>列名=字段ID</code>。例：<code>提交时间=fldXXXX</code>　<code>品牌=fldYYYY</code></div>
     <textarea id="whMap1" placeholder="①常规需求表映射，例：&#10;提交时间=fldXXXX&#10;品牌=fldYYYY" style="width:100%;box-sizing:border-box;height:60px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap1')||''}</textarea>
     <textarea id="whMap2" placeholder="②奖励设置表映射（同上格式）" style="width:100%;box-sizing:border-box;height:60px;margin-top:6px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap2')||''}</textarea>
     <div style="font-size:11px;font-weight:700;color:#92400E;margin:10px 0 4px;">中转地址（可选兜底）</div>
@@ -1620,8 +1620,8 @@ function _grToGames(){
   return [];
 }
 
-// 单元格值：企微智能表文本型字段格式
-function _T(s){ return [{ type:'text', text: String(s==null ? '' : s) }]; }
+// 单元格值：Webhook 文本字段用纯字符串即可（官方支持简化写法）
+function _T(s){ return String(s==null ? '' : s); }
 
 // 解析「列名=字段ID」映射文本
 function _whParseMap(txt){
@@ -1686,9 +1686,11 @@ function whBuildRecords(){
 // 发送到一个 Webhook：优先标准 CORS 请求，被浏览器拦截则降级为 no-cors 盲发
 async function _whSend(url, records, mapText){
   const map = _whParseMap(mapText);
+  if(!map || !Object.keys(map).length){
+    return { ok:false, blind:false, msg:'未配置字段ID映射（Webhook 必须按字段ID写入，请在「⚙️ 高级」粘贴 列名=字段ID）' };
+  }
   const body = JSON.stringify({
-    key_type: 'CELL_VALUE_KEY_TYPE_FIELD_TITLE',
-    records: records.map(r=>({ values: _whApplyMap(r.values, map) }))
+    add_records: records.map(r=>({ values: _whApplyMap(r.values, map) }))
   });
   try{
     const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body });
@@ -1741,7 +1743,8 @@ async function whPush(){
 async function whCopyTSV(){
   const { sheet1, sheet2 } = whBuildRecords();
   const flat = r => Object.keys(r.values).map(k=>{
-    const v = r.values[k].map(x=>x.text).join('');
+    const raw = r.values[k];
+    const v = (typeof raw==='string') ? raw : (raw||[]).map(x=>x.text).join('');
     return v.replace(/\t/g,' ').replace(/\n/g,' ↵ ');
   }).join('\t');
   const head = r => Object.keys(r.values).join('\t');
