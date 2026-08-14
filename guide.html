@@ -716,49 +716,6 @@ input,select,textarea{font-size:16px!important;}
 </div>
 <div style="font-size:10px;color:#9CA3AF;margin-top:6px;">汇总所有选择 → 确认信息 → 复制 / 下载 / 邮件发送，一站式完成</div>
 
-<!-- ===== 智能表设置：常驻卡片（替代原弹层内嵌配置） ===== -->
-<div id="whCard" style="margin-top:18px;padding:14px;background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:12px;">
-  <div style="font-size:13px;font-weight:800;color:#0369A1;margin-bottom:2px;">📥 企业微信智能表 · 自动汇总设置</div>
-  <div style="font-size:10.5px;color:#0891B2;margin-bottom:10px;line-height:1.6;">工作表 Webhook 直发 · 零凭据 / 免中转 / 不碰企业后台。<b>已预置默认收集表，打开即用、无需粘贴</b>；如需改用你自己的表，在下方替换地址后点「💾 记住」即可（仅存本机）。点「🚀 一键提交需求」会<b>自动推送</b>，也可手动点「📤 推送到智能表」。</div>
-
-  <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:4px;">① 常规需求 子表 Webhook 地址（必填）</div>
-  <input id="whUrl1" placeholder="粘贴「常规需求」子表的 Webhook 地址（qyapi…/smartsheet/webhook?key=…）" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;margin-bottom:8px;">
-
-  <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:4px;">② 奖励设置 子表 Webhook 地址（可留空，仅写第一张表）</div>
-  <input id="whUrl2" placeholder="粘贴「奖励设置」子表的 Webhook 地址（留空则只写第一张表）" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;margin-bottom:8px;">
-
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button onclick="whSaveCfg()" class="rb-btn" style="background:#64748B;color:#fff;border:none;min-width:64px;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">💾 记住地址</button>
-    <button id="whPushBtn" onclick="whPush()" class="rb-btn" style="flex:1;min-width:120px;justify-content:center;background:linear-gradient(135deg,#07C160,#059B4A);color:#fff;border:none;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(7,193,96,.25);">📤 推送到智能表</button>
-    <button onclick="whCopyTSV()" class="rb-btn" style="background:#0EA5E9;color:#fff;border:none;min-width:104px;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📋 复制表格行</button>
-    <button onclick="whToggleAdv()" class="rb-btn" style="background:#E2E8F0;color:#334155;border:none;min-width:64px;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">⚙️ 高级</button>
-  </div>
-
-  <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11.5px;color:#0369A1;font-weight:600;cursor:pointer;">
-    <input type="checkbox" id="whAutoPush" checked> 提交需求时自动推送到智能表（推荐）
-  </label>
-
-  <div id="whCardStatus" style="text-align:center;margin-top:8px;min-height:18px;"></div>
-
-  <div id="whAdv" style="display:none;margin-top:10px;padding:10px;background:#fff;border:1px dashed #BAE6FD;border-radius:8px;">
-    <div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:4px;">字段ID映射（⚙️ 推荐用下方一键识别，免手抄）</div>
-    <div style="font-size:10px;color:#92400E;margin-bottom:6px;line-height:1.7;"><b>⚠️ Webhook 只能按字段ID写入，不支持列名。</b>推荐：在智能表 Webhook 配置页复制「示例数据」整段 JSON（含 <code>schema</code>）粘到下面，点「🔍 解析并填充映射」自动配好字段ID和类型。两张表各粘贴一次。</div>
-    <textarea id="whMap1" placeholder="①常规需求表 手动映射（可选）：&#10;提交时间=fldXXXX&#10;品牌=fldYYYY" style="width:100%;box-sizing:border-box;height:54px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;"></textarea>
-    <textarea id="whMap2" placeholder="②奖励设置表 手动映射（可选，同上格式）" style="width:100%;box-sizing:border-box;height:54px;margin-top:6px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;"></textarea>
-    <div style="font-size:11px;font-weight:700;color:#0369A1;margin:10px 0 4px;">📄 一键识别（推荐）：粘贴「示例数据」JSON</div>
-    <textarea id="whSchema1" placeholder="①常规需求表：粘贴示例数据 JSON（含 schema 那段）" style="width:100%;box-sizing:border-box;height:44px;padding:6px 8px;border:1px solid #93C5FD;border-radius:6px;font-size:10px;font-family:monospace;"></textarea>
-    <textarea id="whSchema2" placeholder="②奖励设置表：粘贴示例数据 JSON" style="width:100%;box-sizing:border-box;height:44px;margin-top:6px;padding:6px 8px;border:1px solid #93C5FD;border-radius:6px;font-size:10px;font-family:monospace;"></textarea>
-    <button onclick="whParseSchema()" class="rb-btn" style="margin-top:6px;background:#0369A1;color:#fff;border:none;min-width:124px;padding:7px 12px;border-radius:6px;font-size:11px;cursor:pointer;">🔍 解析并填充映射</button>
-    <div style="font-size:11px;font-weight:700;color:#92400E;margin:10px 0 4px;">中转地址（可选兜底）</div>
-    <div style="font-size:10px;color:#64748B;margin-bottom:6px;">若企业网络禁止浏览器直连 qyapi，可改走自建中转；填了此项则优先走中转。</div>
-    <input id="relayUrl" placeholder="留空即可（仅中转方案需要）" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;">
-  </div>
-
-  <div style="font-size:10px;color:#64748B;margin-top:8px;">Webhook 地址与映射仅保存在本机浏览器（localStorage），不上传、不进代码仓库。</div>
-</div>
-
-
-
 
 </div><!-- end inner-pad -->
 
@@ -1578,10 +1535,35 @@ ${suggestions.map(s => '   • '+s).join('\n')}
     </div>
 </div>
 
-
-<!-- 企微智能表收集区：已移至页面底部常驻卡片（#whCard），此处仅留状态提示 -->
-<div style="margin-top:10px;padding:8px 10px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;font-size:11px;color:#0369A1;line-height:1.6;">
-  📊 企业微信智能表：提交需求时已<b>自动推送</b>（若已配置地址）。地址与字段映射请在页面底部「📥 智能表设置」区填写，一次即可长期记住。
+<!-- 企微智能表收集区（工作表 Webhook 直发：零凭据、免中转、不碰企业后台） -->
+<div style="margin-top:14px;padding:12px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
+  <div style="font-size:12px;font-weight:700;color:#0369A1;margin-bottom:2px;">📥 一键收集到企业微信智能表</div>
+  <div style="font-size:10px;color:#0891B2;margin-bottom:8px;">工作表 Webhook 直发 · 无需企业后台 / 无需 corpid、secret / 无需服务器</div>
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    <input id="whUrl1" placeholder="Webhook ①「常规需求」子表地址（qyapi…/smartsheet/webhook?key=…）" value="${localStorage.getItem('whUrl1')||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
+    <input id="whUrl2" placeholder="Webhook ②「奖励设置」子表地址（留空则只写第一张表）" value="${localStorage.getItem('whUrl2')||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;font-size:12px;">
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+    <button onclick="whSaveCfg()" class="rb-btn" style="background:#64748B;color:#fff;border:none;min-width:64px;">💾 记住</button>
+    <button id="whPushBtn" onclick="whPush()" class="rb-btn" style="flex:1;min-width:96px;justify-content:center;background:linear-gradient(135deg,#07C160,#059B4A);color:#fff;border:none;box-shadow:0 2px 8px rgba(7,193,96,.25);">📤 推送到智能表</button>
+    <button onclick="whCopyTSV()" class="rb-btn" style="background:#0EA5E9;color:#fff;border:none;min-width:104px;">📋 复制表格行</button>
+    <button onclick="whToggleAdv()" class="rb-btn" style="background:#E2E8F0;color:#334155;border:none;min-width:64px;">⚙️ 高级</button>
+  </div>
+  <div id="whAdv" style="display:none;margin-top:8px;padding:10px;background:#fff;border:1px dashed #BAE6FD;border-radius:8px;">
+    <div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:4px;">字段ID映射（必填）</div>
+    <div style="font-size:10px;color:#92400E;margin-bottom:6px;line-height:1.7;"><b>⚠️ Webhook 只能按字段ID写入，不支持列名。</b>推荐用下方「📄 示例数据 JSON」一键自动填充；或手动每行一条：<code>列名=字段ID</code>。例：<code>提交时间=fldXXXX</code>　<code>品牌=fldYYYY</code>（手动框可留空，以 JSON 自动填充为准）</div>
+    <textarea id="whMap1" placeholder="①常规需求表映射，例：&#10;提交时间=fldXXXX&#10;品牌=fldYYYY" style="width:100%;box-sizing:border-box;height:60px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap1')||''}</textarea>
+    <textarea id="whMap2" placeholder="②奖励设置表映射（同上格式）" style="width:100%;box-sizing:border-box;height:60px;margin-top:6px;padding:6px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;font-family:monospace;">${localStorage.getItem('whMap2')||''}</textarea>
+    <div style="font-size:11px;font-weight:700;color:#0369A1;margin:10px 0 4px;">📄 一键识别（推荐）：粘贴「示例数据」JSON</div>
+    <div style="font-size:10px;color:#0369A1;margin-bottom:6px;line-height:1.7;">在智能表 Webhook 配置页复制「示例数据」整段 JSON（含 <code>schema</code>）粘到下面，点「解析」即可<b>自动填好字段ID和类型</b>，免去手抄。两张表各粘贴一次（没填则上面的「列名=字段ID」手动映射仍生效）。</div>
+    <textarea id="whSchema1" placeholder="①常规需求表：粘贴示例数据 JSON（含 schema 那段）" style="width:100%;box-sizing:border-box;height:46px;padding:6px 8px;border:1px solid #93C5FD;border-radius:6px;font-size:10px;font-family:monospace;">${localStorage.getItem('whSchema1')||''}</textarea>
+    <textarea id="whSchema2" placeholder="②奖励设置表：粘贴示例数据 JSON" style="width:100%;box-sizing:border-box;height:46px;margin-top:6px;padding:6px 8px;border:1px solid #93C5FD;border-radius:6px;font-size:10px;font-family:monospace;">${localStorage.getItem('whSchema2')||''}</textarea>
+    <button onclick="whParseSchema()" class="rb-btn" style="margin-top:6px;background:#0369A1;color:#fff;border:none;min-width:124px;">🔍 解析并填充映射</button>
+    <div style="font-size:11px;font-weight:700;color:#92400E;margin:10px 0 4px;">中转地址（可选兜底）</div>
+    <div style="font-size:10px;color:#64748B;margin-bottom:6px;">若企业网络禁止浏览器直连 qyapi，可改走自建中转；填了此项则优先走中转。</div>
+    <input id="relayUrl" placeholder="留空即可（仅中转方案需要）" value="${localStorage.getItem('relayUrl')||''}" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #CBD5E1;border-radius:6px;font-size:11px;">
+  </div>
+  <div style="font-size:10px;color:#64748B;margin-top:6px;">Webhook 地址与映射仅保存在本机浏览器（localStorage），不上传、不进代码仓库。</div>
 </div>
 
 <!-- 操作按钮区 -->
@@ -1630,9 +1612,7 @@ function whSaveCfg(){
     const e = document.getElementById(id);
     if(e) localStorage.setItem(id, e.value.trim());
   });
-  const ap = document.getElementById('whAutoPush');
-  if(ap) localStorage.setItem('whAutoPush', ap.checked ? '1' : '0');
-  showActionResult('💾 已记住（仅存本机浏览器，上传）', '#0369A1');
+  showActionResult('💾 已记住（仅存本机浏览器，不上传）', '#0369A1');
 }
 
 function saveRelayUrl(){ whSaveCfg(); }
@@ -1973,59 +1953,6 @@ input,select,textarea{font-size:16px!important;}
 </table>
 <br/><br/>
 <p style="text-align:center;font-size:11px;color:#bbb;">本表由《商户赛·品牌合作指南》SOP自动生成</p>
-
-<script>
-// 智能表设置：回填已保存的 Webhook 地址/映射，并持久化「自动推送」勾选
-(function(){
-  // 预置默认值：统一收集进「你的」两张智能表，他人打开即用、无需粘贴
-  // 仅当浏览器本地从未保存过时才填入；任何人手动改后点「💾 记住」会覆盖保存
-  var SCHEMA1 = {schema:{
-    "f04Gwj":{"title":"提交时间","type":"text"},
-    "f5oLix":{"title":"品牌","type":"text"},
-    "faLcc3":{"title":"赛事起始","type":"date_time"},
-    "f0EYfj":{"title":"赛事结束","type":"date_time"},
-    "ftQMc5":{"title":"奖励类型","type":"multiple_select"},
-    "fn8TJd":{"title":"抽奖任务","type":"multiple_select"},
-    "fM7qxL":{"title":"主推城市","type":"multiple_select"},
-    "fOGdCQ":{"title":"小程序","type":"text"},
-    "f8NADO":{"title":"来源","type":"single_select"}
-  }};
-  var SCHEMA2 = {schema:{
-    "f4G4st":{"title":"提交时间","type":"text"},
-    "fvMsIU":{"title":"品牌","type":"text"},
-    "fcdjVg":{"title":"合作游戏","type":"single_select"},
-    "fTRP09":{"title":"周期","type":"text"},
-    "fMNINR":{"title":"奖励明细","type":"text"},
-    "fJS4kk":{"title":"来源","type":"text"}
-  }};
-  var WH_DEFAULT = {
-    whUrl1: 'https://qyapi.weixin.qq.com/cgi-bin/wedoc/smartsheet/webhook?key=TljpLNFsjpoOOOqj3OT5XFIle9WS6KZu5s1zLSsb2BTzCDyyoAVKB0ejnnHAYUbOvuZpGSQBE4maxsXzzTEOxSZExK9S8vq9okiqTboS4Rj',
-    whUrl2: 'https://qyapi.weixin.qq.com/cgi-bin/wedoc/smartsheet/webhook?key=Q7bTAdQ2om8dT7jX0F6YTjq2Ho4QqvWYSqbV4fmwCJ1OxZ6nPM17hnZVBJQjYeQL3DdKnuWu4vpTqAnhz7BsPX5FvW5b74gVeXoS6u8H6Yy',
-    whSchema1: JSON.stringify(SCHEMA1),
-    whSchema2: JSON.stringify(SCHEMA2),
-    whMap1: '提交时间=f04Gwj\n品牌=f5oLix\n赛事起始=faLcc3\n赛事结束=f0EYfj\n奖励类型=ftQMc5\n抽奖任务=fn8TJd\n主推城市=fM7qxL\n小程序=fOGdCQ\n来源=f8NADO',
-    whMap2: '提交时间=f4G4st\n品牌=fvMsIU\n合作游戏=fcdjVg\n周期=fTRP09\n奖励明细=fMNINR\n来源=fJS4kk'
-  };
-  Object.keys(WH_DEFAULT).forEach(function(id){
-    var e = document.getElementById(id);
-    if(!e) return;
-    var v = localStorage.getItem(id);
-    if(v === null || v === ''){ v = WH_DEFAULT[id]; if(v !== undefined) localStorage.setItem(id, v); }
-    if(v) e.value = v;
-  });
-  // 中转地址（可选）：仅回填已保存值，不预填
-  var r = document.getElementById('relayUrl');
-  if(r){ var rv = localStorage.getItem('relayUrl'); if(rv !== null) r.value = rv; }
-  var ap = document.getElementById('whAutoPush');
-  if(ap){
-    var av = localStorage.getItem('whAutoPush');
-    if(av === null){ ap.checked = true; localStorage.setItem('whAutoPush','1'); }
-    else ap.checked = (av === '1');
-    ap.addEventListener('change', function(){ localStorage.setItem('whAutoPush', ap.checked ? '1' : '0'); });
-  }
-})();
-</script>
-
 </body>
 </html>
     `);
@@ -2038,11 +1965,10 @@ input,select,textarea{font-size:16px!important;}
 
 // 显示操作结果反馈
 function showActionResult(msg, color){
-    const html = `<span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:11.5px;font-weight:600;background:${color}15;color:${color};animation:fadeIn 0.25s ease;">${msg}</span>`;
-    ['actionResult','whCardStatus'].forEach(function(id){
-        const el = document.getElementById(id);
-        if(el){ el.innerHTML = html; setTimeout(function(){ if(el) el.innerHTML=''; }, 3500); }
-    });
+    const el = document.getElementById('actionResult');
+    if(!el) return;
+    el.innerHTML = `<span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:11.5px;font-weight:600;background:${color}15;color:${color};animation:fadeIn 0.25s ease;">${msg}</span>`;
+    setTimeout(() => { el.innerHTML = ''; }, 3500);
 }
 </script>
 
