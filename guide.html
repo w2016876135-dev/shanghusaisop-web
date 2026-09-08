@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -1187,10 +1187,30 @@ function grCollectAll(){
       const title = titleEl.textContent.trim();
       const noteEl = sub.parentElement ? sub.parentElement.querySelector('.gr-note') : null;
       const tbody = sub.querySelector('tbody[data-cols]');
-      if(!tbody) return;
-      const cols = JSON.parse(tbody.getAttribute('data-cols') || '[]');
+      // 如果没有 data-cols，检查是否是抽奖奖励设置表格（lotteryBody-*）
+      let targetTbody = tbody;
+      let cols = tbody ? JSON.parse(tbody.getAttribute('data-cols') || '[]') : [];
+      if(!tbody){
+        const lotteryTbody = sub.querySelector('tbody[id^="lotteryBody"]');
+        if(lotteryTbody){
+          // 只在抽奖任务已勾选时收集
+          const lotteryWrap = sub.closest('.gr-lottery-wrap');
+          const taskToggle = lotteryWrap ? lotteryWrap.querySelector('.task-toggle.active') : null;
+          if(!taskToggle) return; // 未勾选抽奖任务，跳过
+          targetTbody = lotteryTbody;
+          cols = [{f:'概率'},{f:'奖励内容'},{f:'总库存'}];
+          // 采集抽奖任务名称，追加到标题
+          const taskNameInp = sub.querySelector('.gr-field input');
+          if(taskNameInp && taskNameInp.value.trim()){
+            const titleElRef = sub.querySelector('.gr-sub-t');
+            if(titleElRef) titleElRef.dataset._taskName = taskNameInp.value.trim();
+          }
+        } else {
+          return;
+        }
+      }
       const rows = [];
-      tbody.querySelectorAll('tr').forEach(tr=>{
+      targetTbody.querySelectorAll('tr').forEach(tr=>{
         const cells = [];
         tr.querySelectorAll('td').forEach((td, idx)=>{
           if(td.querySelector('button.gr-del')) return; // 跳过删除列
@@ -1203,7 +1223,11 @@ function grCollectAll(){
         });
         if(cells.length && !(cells.length === 1 && cells[0]==='')) rows.push({cells, cols});
       });
-      if(rows.length) blocks.push({title, rows, cols});
+      // 读取抽奖任务名称（若有）并拼入标题
+      const titleElFinal = sub.querySelector('.gr-sub-t');
+      const taskNameStored = titleElFinal ? (titleElFinal.dataset._taskName || '') : '';
+      const finalTitle = taskNameStored ? title + '（任务：' + taskNameStored + '）' : title;
+      if(rows.length) blocks.push({title: finalTitle, rows, cols});
     });
     if(blocks.length) out.push({game, gameName, brand, period, blocks});
   });
